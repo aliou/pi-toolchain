@@ -17,7 +17,7 @@
 import type { Program } from "@aliou/sh";
 import { parse } from "@aliou/sh";
 import type { BashSpawnContext } from "@mariozechner/pi-coding-agent";
-import { walkCommands, wordToString } from "../shell-utils";
+import { walkCommands, wordToString } from "../utils/shell-utils";
 
 const PYTHON_COMMANDS = new Set(["python", "python3"]);
 const PIP_COMMANDS = new Set(["pip", "pip3"]);

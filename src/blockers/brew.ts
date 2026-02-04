@@ -9,7 +9,7 @@
 
 import { parse } from "@aliou/sh";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { walkCommands, wordToString } from "../shell-utils";
+import { walkCommands, wordToString } from "../utils/shell-utils";
 
 const BREW_PATTERN = /\bbrew\b/;
 

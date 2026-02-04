@@ -12,8 +12,8 @@
 import type { Program } from "@aliou/sh";
 import { parse } from "@aliou/sh";
 import type { BashSpawnContext } from "@mariozechner/pi-coding-agent";
-import type { ResolvedToolchainConfig } from "../config-schema";
-import { walkCommands, wordToString } from "../shell-utils";
+import type { ResolvedToolchainConfig } from "../config";
+import { walkCommands, wordToString } from "../utils/shell-utils";
 
 type PackageManager = "bun" | "pnpm" | "npm";
 

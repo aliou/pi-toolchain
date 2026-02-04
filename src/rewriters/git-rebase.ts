@@ -13,7 +13,10 @@
 
 import { parse } from "@aliou/sh";
 import type { BashSpawnContext } from "@mariozechner/pi-coding-agent";
-import { walkCommandsWithAssignments, wordToString } from "../shell-utils";
+import {
+  walkCommandsWithAssignments,
+  wordToString,
+} from "../utils/shell-utils";
 
 export function createGitRebaseRewriter(): (
   ctx: BashSpawnContext,

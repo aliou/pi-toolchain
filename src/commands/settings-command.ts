@@ -3,8 +3,8 @@ import {
   type SettingsSection,
 } from "@aliou/pi-utils-settings";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { configLoader } from "./config";
-import type { ResolvedToolchainConfig, ToolchainConfig } from "./config-schema";
+import type { ResolvedToolchainConfig, ToolchainConfig } from "../config";
+import { configLoader } from "../config";
 
 type FeatureKey = keyof ResolvedToolchainConfig["features"];
 

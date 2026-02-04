@@ -27,6 +27,8 @@
     "*.ts",
     "rewriters",
     "blockers",
+    "commands",
+    "utils",
     "README.md"
   ],
   "dependencies": {

@@ -6,7 +6,7 @@
  */
 
 import type { BashSpawnContext } from "@mariozechner/pi-coding-agent";
-import type { ResolvedToolchainConfig } from "../config-schema";
+import type { ResolvedToolchainConfig } from "../config";
 import { createGitRebaseRewriter } from "./git-rebase";
 import { createPackageManagerRewriter } from "./package-manager";
 import { createPythonRewriter } from "./python";

@@ -16,7 +16,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { parse } from "@aliou/sh";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { walkCommands, wordToString } from "../shell-utils";
+import { walkCommands, wordToString } from "../utils/shell-utils";
 
 const PYTHON_COMMANDS = new Set(["python", "python3", "pip", "pip3"]);
 

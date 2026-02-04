@@ -3,9 +3,9 @@ import {
   type ExtensionAPI,
 } from "@mariozechner/pi-coding-agent";
 import { setupBlockers } from "./blockers";
+import { registerToolchainSettings } from "./commands/settings-command";
 import { configLoader } from "./config";
 import { createSpawnHook } from "./rewriters";
-import { registerToolchainSettings } from "./settings-command";
 
 /**
  * Toolchain Extension

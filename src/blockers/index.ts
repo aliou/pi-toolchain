@@ -6,7 +6,7 @@
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import type { ResolvedToolchainConfig } from "../config-schema";
+import type { ResolvedToolchainConfig } from "../config";
 import { setupBrewBlocker } from "./brew";
 import { setupPythonConfirm } from "./python-confirm";
 
