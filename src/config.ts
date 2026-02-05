@@ -49,4 +49,6 @@ const DEFAULT_CONFIG: ResolvedToolchainConfig = {
 export const configLoader = new ConfigLoader<
   ToolchainConfig,
   ResolvedToolchainConfig
->("toolchain", DEFAULT_CONFIG);
+>("toolchain", DEFAULT_CONFIG, {
+  scopes: ["global", "local", "memory"],
+});
