@@ -11,6 +11,7 @@ export interface ToolchainConfig {
     enforcePackageManager?: boolean;
     rewritePython?: boolean;
     preventBrew?: boolean;
+    preventDockerSecrets?: boolean;
     gitRebaseEditor?: boolean;
   };
   packageManager?: {
@@ -24,6 +25,7 @@ export interface ResolvedToolchainConfig {
     enforcePackageManager: boolean;
     rewritePython: boolean;
     preventBrew: boolean;
+    preventDockerSecrets: boolean;
     gitRebaseEditor: boolean;
   };
   packageManager: {
@@ -39,6 +41,7 @@ const DEFAULT_CONFIG: ResolvedToolchainConfig = {
     enforcePackageManager: false,
     rewritePython: false,
     preventBrew: false,
+    preventDockerSecrets: false,
     gitRebaseEditor: true,
   },
   packageManager: {

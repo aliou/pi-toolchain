@@ -8,6 +8,7 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { ResolvedToolchainConfig } from "../config";
 import { setupBrewBlocker } from "./brew";
+import { setupDockerSecretsBlocker } from "./docker-secrets";
 import { setupPythonConfirm } from "./python-confirm";
 
 export function setupBlockers(
@@ -16,6 +17,9 @@ export function setupBlockers(
 ): void {
   if (config.features.preventBrew) {
     setupBrewBlocker(pi);
+  }
+  if (config.features.preventDockerSecrets) {
+    setupDockerSecretsBlocker(pi);
   }
   if (config.features.rewritePython) {
     setupPythonConfirm(pi);

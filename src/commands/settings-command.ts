@@ -23,6 +23,11 @@ const FEATURE_UI: Record<FeatureKey, { label: string; description: string }> = {
     description:
       "Block brew install/upgrade commands (use Nix or system packages)",
   },
+  preventDockerSecrets: {
+    label: "Block docker secret reads",
+    description:
+      "Block docker inspect and env-exfiltration commands via docker exec",
+  },
   gitRebaseEditor: {
     label: "Git rebase editor",
     description:

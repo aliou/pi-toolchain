@@ -1,5 +1,11 @@
 # @aliou/pi-toolchain
 
+## 0.2.1
+
+### Patch Changes
+
+- Add `preventDockerSecrets` blocker feature to block `docker inspect` and common `docker exec` env-exfiltration commands (`env`, `printenv`, `/proc/*/environ`).
+
 ## 0.2.0
 
 ### Minor Changes

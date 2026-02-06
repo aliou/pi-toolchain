@@ -44,6 +44,7 @@ These features rewrite commands before shell execution. The agent never sees tha
 These features block commands that have no clear rewrite target.
 
 - **preventBrew**: Blocks all `brew` commands. Homebrew has no reliable 1:1 mapping to Nix.
+- **preventDockerSecrets**: Blocks `docker inspect` and common `docker exec` env-exfiltration commands (`env`, `printenv`, `/proc/*/environ`).
 - **python confirm** (part of rewritePython): When python/pip is used outside a uv project (no `pyproject.toml`), shows a confirmation dialog. Also blocks `poetry`/`pyenv`/`virtualenv` unconditionally.
 
 ## Configuration
@@ -62,6 +63,7 @@ Configuration is loaded from two optional JSON files, merged in order (project o
     "enforcePackageManager": false,
     "rewritePython": false,
     "preventBrew": false,
+    "preventDockerSecrets": false,
     "gitRebaseEditor": true
   },
   "packageManager": {
@@ -79,6 +81,7 @@ All fields are optional. Missing fields use the defaults shown above.
 | `enforcePackageManager` | `false` | Opt-in. User must pick a manager. |
 | `rewritePython` | `false` | Opt-in. User must have uv set up. |
 | `preventBrew` | `false` | Opt-in. Machine-specific. |
+| `preventDockerSecrets` | `false` | Opt-in. Blocks commands that can exfiltrate container env secrets. |
 | `gitRebaseEditor` | `true` | On by default. Always safe. |
 
 ### Examples
