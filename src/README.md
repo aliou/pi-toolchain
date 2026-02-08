@@ -47,6 +47,14 @@ These features block commands that have no clear rewrite target.
 - **preventDockerSecrets**: Blocks `docker inspect` and common `docker exec` env-exfiltration commands (`env`, `printenv`, `/proc/*/environ`).
 - **python confirm** (part of rewritePython): When python/pip is used outside a uv project (no `pyproject.toml`), shows a confirmation dialog. Also blocks `poetry`/`pyenv`/`virtualenv` unconditionally.
 
+## Settings Command
+
+Run `/toolchain:settings` to open an interactive settings UI with two tabs:
+- **Local**: edit project-scoped config (`.pi/extensions/toolchain.json`)
+- **Global**: edit global config (`~/.pi/agent/extensions/toolchain.json`)
+
+Use `Tab` / `Shift+Tab` to switch tabs. Boolean settings and the package manager can be toggled directly.
+
 ## Configuration
 
 Configuration is loaded from two optional JSON files, merged in order (project overrides global):
