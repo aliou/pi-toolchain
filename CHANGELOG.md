@@ -1,5 +1,11 @@
 # @aliou/pi-toolchain
 
+## 0.3.4
+
+### Patch Changes
+
+- b8a0e8b: Move to standalone repository
+
 ## 0.3.3
 
 ### Patch Changes
