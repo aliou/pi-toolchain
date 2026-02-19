@@ -57,5 +57,10 @@
     "changeset": "changeset",
     "version": "changeset version",
     "release": "pnpm changeset publish"
+  },
+  "peerDependenciesMeta": {
+    "@mariozechner/pi-coding-agent": {
+      "optional": true
+    }
   }
 }
