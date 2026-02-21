@@ -1,5 +1,11 @@
 # @aliou/pi-toolchain
 
+## 0.3.6
+
+### Patch Changes
+
+- cd484a8: Fix `prepare` script to only run husky from a git repository.
+
 ## 0.3.5
 
 ### Patch Changes
