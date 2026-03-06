@@ -1,5 +1,11 @@
 # @aliou/pi-toolchain
 
+## 0.3.7
+
+### Patch Changes
+
+- 60f4ede: bump @aliou/pi-utils-settings to ^0.10.0 (local scope fix)
+
 ## 0.3.6
 
 ### Patch Changes
