@@ -3,35 +3,35 @@ import {
   type SettingsSection,
 } from "@aliou/pi-utils-settings";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import type { ResolvedToolchainConfig, ToolchainConfig } from "../config";
+import type {
+  FeatureMode,
+  ResolvedToolchainConfig,
+  ToolchainConfig,
+} from "../config";
 import { configLoader } from "../config";
 
 type FeatureKey = keyof ResolvedToolchainConfig["features"];
 
-const FEATURE_UI: Record<FeatureKey, { label: string; description: string }> = {
+const FEATURE_UI: Record<
+  FeatureKey,
+  { label: string; description: string; modes: FeatureMode[] }
+> = {
   enforcePackageManager: {
     label: "Enforce package manager",
     description:
-      "Rewrite npm/yarn/bun commands to the selected package manager",
+      "Rewrite or block npm/yarn/bun commands to use the selected package manager",
+    modes: ["disabled", "rewrite", "block"],
   },
   rewritePython: {
-    label: "Rewrite Python commands",
-    description: "Prepend 'uv run' to python/python3, rewrite pip to 'uv pip'",
-  },
-  preventBrew: {
-    label: "Block Homebrew",
-    description:
-      "Block brew install/upgrade commands (use Nix or system packages)",
-  },
-  preventDockerSecrets: {
-    label: "Block docker secret reads",
-    description:
-      "Block docker inspect and env-exfiltration commands via docker exec",
+    label: "Python commands",
+    description: "Rewrite or block python/pip commands to use uv equivalents",
+    modes: ["disabled", "rewrite", "block"],
   },
   gitRebaseEditor: {
     label: "Git rebase editor",
     description:
-      "Inject GIT_EDITOR and GIT_SEQUENCE_EDITOR for non-interactive rebase",
+      "Inject GIT_EDITOR and GIT_SEQUENCE_EDITOR for non-interactive rebase (rewrite only)",
+    modes: ["disabled", "rewrite"],
   },
 };
 
@@ -52,11 +52,8 @@ export function registerToolchainSettings(pi: ExtensionAPI): void {
           id: `features.${key}`,
           label: FEATURE_UI[key].label,
           description: FEATURE_UI[key].description,
-          currentValue:
-            (tabConfig?.features?.[key] ?? resolved.features[key])
-              ? "enabled"
-              : "disabled",
-          values: ["enabled", "disabled"],
+          currentValue: tabConfig?.features?.[key] ?? resolved.features[key],
+          values: FEATURE_UI[key].modes,
         }),
       );
 
@@ -72,7 +69,7 @@ export function registerToolchainSettings(pi: ExtensionAPI): void {
               id: "packageManager.selected",
               label: "Selected manager",
               description:
-                "Package manager to enforce when 'Enforce package manager' is enabled",
+                "Package manager to use when enforcePackageManager is enabled",
               currentValue:
                 tabConfig?.packageManager?.selected ??
                 resolved.packageManager.selected,

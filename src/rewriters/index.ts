@@ -3,6 +3,7 @@
  *
  * Each rewriter transforms a BashSpawnContext (command + cwd + env)
  * and returns a new context. They are chained sequentially.
+ * Only features with mode "rewrite" are included.
  */
 
 import type { BashSpawnContext } from "@mariozechner/pi-coding-agent";
@@ -16,13 +17,13 @@ export function createSpawnHook(
 ): (ctx: BashSpawnContext) => BashSpawnContext {
   const rewriters: ((ctx: BashSpawnContext) => BashSpawnContext)[] = [];
 
-  if (config.features.enforcePackageManager) {
+  if (config.features.enforcePackageManager === "rewrite") {
     rewriters.push(createPackageManagerRewriter(config));
   }
-  if (config.features.rewritePython) {
+  if (config.features.rewritePython === "rewrite") {
     rewriters.push(createPythonRewriter());
   }
-  if (config.features.gitRebaseEditor) {
+  if (config.features.gitRebaseEditor === "rewrite") {
     rewriters.push(createGitRebaseRewriter());
   }
 
