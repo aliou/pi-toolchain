@@ -16,8 +16,8 @@
 
 import type { Program } from "@aliou/sh";
 import { parse } from "@aliou/sh";
-import type { BashSpawnContext } from "@mariozechner/pi-coding-agent";
 import { walkCommands, wordToString } from "../utils/shell-utils";
+import type { Rewriter } from "./types";
 
 const PYTHON_COMMANDS = new Set(["python", "python3"]);
 const PIP_COMMANDS = new Set(["pip", "pip3"]);
@@ -28,15 +28,13 @@ interface Replacement {
   text: string;
 }
 
-export function createPythonRewriter(): (
-  ctx: BashSpawnContext,
-) => BashSpawnContext {
+export function createPythonRewriter(): Rewriter {
   return (ctx) => {
     let ast: Program;
     try {
       ({ ast } = parse(ctx.command));
     } catch {
-      return ctx;
+      return { ctx, notices: [] };
     }
 
     const replacements: Replacement[] = [];
@@ -82,7 +80,7 @@ export function createPythonRewriter(): (
       return undefined;
     });
 
-    if (replacements.length === 0) return ctx;
+    if (replacements.length === 0) return { ctx, notices: [] };
 
     // Apply replacements from right to left so offsets remain valid.
     let result = ctx.command;
@@ -91,7 +89,13 @@ export function createPythonRewriter(): (
       result = result.slice(0, r.start) + r.text + result.slice(r.end);
     }
 
-    return { ...ctx, command: result };
+    return {
+      ctx: { ...ctx, command: result },
+      notices:
+        result === ctx.command
+          ? []
+          : [{ message: `Rewrote command: ${ctx.command} -> ${result}` }],
+    };
   };
 }
 

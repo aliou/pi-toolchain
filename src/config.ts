@@ -23,6 +23,9 @@ export interface ToolchainConfig {
   packageManager?: {
     selected?: "bun" | "pnpm" | "npm";
   };
+  ui?: {
+    showRewriteNotifications?: boolean;
+  };
 }
 
 export interface ResolvedToolchainConfig {
@@ -34,6 +37,9 @@ export interface ResolvedToolchainConfig {
   };
   packageManager: {
     selected: "bun" | "pnpm" | "npm";
+  };
+  ui: {
+    showRewriteNotifications: boolean;
   };
 }
 
@@ -49,6 +55,9 @@ const DEFAULT_CONFIG: ResolvedToolchainConfig = {
   },
   packageManager: {
     selected: "pnpm",
+  },
+  ui: {
+    showRewriteNotifications: false,
   },
 };
 

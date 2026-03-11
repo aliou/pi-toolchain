@@ -18,7 +18,7 @@ pi install git:github.com/aliou/pi-toolchain
 
 ### Rewriters (transparent, via spawn hook)
 
-These features rewrite commands before shell execution. The agent never sees that the command was changed.
+These features rewrite commands before shell execution. By default the agent does not see that the command was changed, but you can enable optional rewrite notifications in the config.
 
 - **enforcePackageManager**: Rewrites `npm`/`yarn`/`bun` commands to the selected package manager. Also handles `npx` -> `pnpm dlx`/`bunx`.
 - **rewritePython**: Rewrites `python`/`python3` to `uv run python` and `pip`/`pip3` to `uv pip`.
@@ -38,7 +38,7 @@ Run `/toolchain:settings` to open an interactive settings UI with two tabs:
 - **Local**: edit project-scoped config (`.pi/extensions/toolchain.json`)
 - **Global**: edit global config (`~/.pi/agent/extensions/toolchain.json`)
 
-Use `Tab` / `Shift+Tab` to switch tabs. Boolean settings and the package manager can be toggled directly.
+Use `Tab` / `Shift+Tab` to switch tabs. Feature modes and the package manager can be changed directly. Configure rewrite notification visibility in JSON for now.
 
 ## Configuration
 
@@ -53,14 +53,15 @@ Configuration is loaded from two optional JSON files, merged in order (project o
 {
   "enabled": true,
   "features": {
-    "enforcePackageManager": false,
-    "rewritePython": false,
-    "preventBrew": false,
-    "preventDockerSecrets": false,
-    "gitRebaseEditor": true
+    "enforcePackageManager": "disabled",
+    "rewritePython": "disabled",
+    "gitRebaseEditor": "rewrite"
   },
   "packageManager": {
     "selected": "pnpm"
+  },
+  "ui": {
+    "showRewriteNotifications": false
   }
 }
 ```
@@ -71,34 +72,39 @@ All fields are optional. Missing fields use the defaults shown above.
 
 | Feature | Default | Description |
 |---|---|---|
-| `enforcePackageManager` | `false` | Opt-in. User must pick a manager. |
-| `rewritePython` | `false` | Opt-in. User must have uv set up. |
-| `preventBrew` | `false` | Opt-in. Machine-specific. |
-| `preventDockerSecrets` | `false` | Opt-in. Blocks commands that can exfiltrate container env secrets. |
-| `gitRebaseEditor` | `true` | On by default. Always safe. |
+| `enforcePackageManager` | `"disabled"` | Opt-in. Rewrites or blocks package-manager commands. |
+| `rewritePython` | `"disabled"` | Opt-in. Rewrites or blocks python/pip commands to uv equivalents. |
+| `gitRebaseEditor` | `"rewrite"` | On by default. Injects non-interactive env vars for git rebase. |
+| `ui.showRewriteNotifications` | `false` | Show a visible Pi notification each time a rewrite happens. |
 
 ### Examples
 
-Enforce pnpm and block brew:
+Enforce pnpm, rewrite python commands, and show rewrite notifications:
 
 ```json
 {
   "features": {
-    "enforcePackageManager": true,
-    "preventBrew": true
+    "enforcePackageManager": "rewrite",
+    "rewritePython": "rewrite"
   },
   "packageManager": {
     "selected": "pnpm"
+  },
+  "ui": {
+    "showRewriteNotifications": true
   }
 }
 ```
 
-Enable python/uv rewriting:
+Block package-manager mismatches instead of rewriting them:
 
 ```json
 {
   "features": {
-    "rewritePython": true
+    "enforcePackageManager": "block"
+  },
+  "packageManager": {
+    "selected": "pnpm"
   }
 }
 ```
@@ -109,14 +115,14 @@ Enable python/uv rewriting:
 
 The extension uses two pi mechanisms:
 
-1. **Spawn hook** (`createBashTool` with `spawnHook`): Rewrites commands before shell execution. The agent sees the output of the rewritten command but doesn't know it was changed. Used for package manager, python/uv, and git rebase.
-
-2. **tool_call event hooks**: Block commands entirely. The agent sees a block reason and retries with the correct command. Used for brew (no rewrite target) and python outside uv projects (needs confirmation).
+1. **Spawn hook** (`createBashTool` with `spawnHook`): Rewrites commands before shell execution. The agent sees the original command in the tool call UI but gets the output of the rewritten command.
+2. **tool_call event hooks**: Block commands entirely. The agent sees a block reason and retries with the correct command. Used for commands that have no safe rewrite target.
+3. **Optional rewrite notifications**: When `ui.showRewriteNotifications` is enabled, a warning-level Pi notification is shown before the rewritten command runs.
 
 ### Execution Order
 
 1. Guardrails `tool_call` hooks run first (permission gate, env protection)
-2. Toolchain `tool_call` hooks run (brew blocker, python confirm)
+2. Toolchain `tool_call` hooks run (blockers, optional rewrite notifications)
 3. If not blocked, toolchain's bash tool runs with spawn hook (rewrites command)
 4. Shell executes the rewritten command
 

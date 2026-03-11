@@ -12,15 +12,13 @@
  */
 
 import { parse } from "@aliou/sh";
-import type { BashSpawnContext } from "@mariozechner/pi-coding-agent";
 import {
   walkCommandsWithAssignments,
   wordToString,
 } from "../utils/shell-utils";
+import type { Rewriter } from "./types";
 
-export function createGitRebaseRewriter(): (
-  ctx: BashSpawnContext,
-) => BashSpawnContext {
+export function createGitRebaseRewriter(): Rewriter {
   return (ctx) => {
     let needsEditor = false;
 
@@ -47,18 +45,28 @@ export function createGitRebaseRewriter(): (
       }
     }
 
-    if (!needsEditor) return ctx;
+    if (!needsEditor) return { ctx, notices: [] };
 
     // Skip if env vars already set in the context
-    if (ctx.env.GIT_EDITOR || ctx.env.GIT_SEQUENCE_EDITOR) return ctx;
+    if (ctx.env.GIT_EDITOR || ctx.env.GIT_SEQUENCE_EDITOR) {
+      return { ctx, notices: [] };
+    }
 
     return {
-      ...ctx,
-      env: {
-        ...ctx.env,
-        GIT_EDITOR: "true",
-        GIT_SEQUENCE_EDITOR: ":",
+      ctx: {
+        ...ctx,
+        env: {
+          ...ctx.env,
+          GIT_EDITOR: "true",
+          GIT_SEQUENCE_EDITOR: ":",
+        },
       },
+      notices: [
+        {
+          message:
+            "Rewrote command behavior: injected GIT_EDITOR=true and GIT_SEQUENCE_EDITOR=: for git rebase",
+        },
+      ],
     };
   };
 }

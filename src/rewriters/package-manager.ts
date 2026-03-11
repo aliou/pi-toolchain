@@ -11,9 +11,9 @@
 
 import type { Program } from "@aliou/sh";
 import { parse } from "@aliou/sh";
-import type { BashSpawnContext } from "@mariozechner/pi-coding-agent";
 import type { ResolvedToolchainConfig } from "../config";
 import { walkCommands, wordToString } from "../utils/shell-utils";
+import type { Rewriter } from "./types";
 
 type PackageManager = "bun" | "pnpm" | "npm";
 
@@ -37,7 +37,7 @@ interface Replacement {
 
 export function createPackageManagerRewriter(
   config: ResolvedToolchainConfig,
-): (ctx: BashSpawnContext) => BashSpawnContext {
+): Rewriter {
   const selected = config.packageManager.selected;
 
   return (ctx) => {
@@ -45,7 +45,7 @@ export function createPackageManagerRewriter(
     try {
       ({ ast } = parse(ctx.command));
     } catch {
-      return ctx;
+      return { ctx, notices: [] };
     }
 
     const replacements: Replacement[] = [];
@@ -99,7 +99,7 @@ export function createPackageManagerRewriter(
       return undefined;
     });
 
-    if (replacements.length === 0) return ctx;
+    if (replacements.length === 0) return { ctx, notices: [] };
 
     // Apply replacements from right to left so offsets remain valid.
     let result = ctx.command;
@@ -108,7 +108,13 @@ export function createPackageManagerRewriter(
       result = result.slice(0, r.start) + r.text + result.slice(r.end);
     }
 
-    return { ...ctx, command: result };
+    return {
+      ctx: { ...ctx, command: result },
+      notices:
+        result === ctx.command
+          ? []
+          : [{ message: `Rewrote command: ${ctx.command} -> ${result}` }],
+    };
   };
 }
 
