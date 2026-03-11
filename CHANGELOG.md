@@ -1,5 +1,11 @@
 # @aliou/pi-toolchain
 
+## 0.5.0
+
+### Minor Changes
+
+- 520acf2: Add optional warning-level notifications for rewritten commands so demos and debugging make toolchain rewrites visible.
+
 ## 0.4.0
 
 ### Minor Changes
