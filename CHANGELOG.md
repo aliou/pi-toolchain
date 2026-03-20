@@ -1,5 +1,11 @@
 # @aliou/pi-toolchain
 
+## 0.5.1
+
+### Patch Changes
+
+- f8e54a4: update Pi deps to 0.61.0
+
 ## 0.5.0
 
 ### Minor Changes
