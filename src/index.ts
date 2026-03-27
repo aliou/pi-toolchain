@@ -1,16 +1,13 @@
-import {
-  createBashTool,
-  type ExtensionAPI,
-} from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { setupBlockers } from "./blockers";
 import { registerToolchainSettings } from "./commands/settings-command";
 import { configLoader } from "./config";
+import { registerBashIntegration } from "./hooks/bash-integration";
 import {
   hasRewriteFeatures,
   registerRewriteNotifications,
 } from "./hooks/rewrite-notifications";
 import { registerSessionStartWarnings } from "./hooks/session-start";
-import { createSpawnHook } from "./rewriters";
 
 /**
  * Toolchain Extension
@@ -37,8 +34,5 @@ export default async function (pi: ExtensionAPI) {
   registerRewriteNotifications(pi, config);
 
   if (!hasRewriteFeatures(config)) return;
-
-  const spawnHook = createSpawnHook(config);
-  const bashTool = createBashTool(process.cwd(), { spawnHook });
-  pi.registerTool({ ...bashTool });
+  registerBashIntegration(pi, config);
 }
