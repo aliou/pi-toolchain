@@ -1,5 +1,12 @@
 # @aliou/pi-toolchain
 
+## 0.5.2
+
+### Patch Changes
+
+- c74fa7d: contribute bash spawn hook via composer request event while keeping standalone fallback
+- d99e3b0: refactor internal extension hook registration structure for readability
+
 ## 0.5.1
 
 ### Patch Changes
