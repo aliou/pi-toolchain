@@ -1,6 +1,6 @@
 {
   "name": "@aliou/pi-toolchain",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "packageManager": "pnpm@10.26.1",
   "repository": {
     "type": "git",
