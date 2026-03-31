@@ -18,7 +18,7 @@ import type { FeatureMode, ToolchainConfig } from "../config";
  * Config schema version. Bump only when a migration is added.
  * Keep independent from package.json version.
  */
-export const CURRENT_VERSION = "0.4.0-20260310";
+export const CURRENT_VERSION = "0.5.2-20260331";
 
 /** Warnings queued during migration, flushed at session_start. */
 export const pendingWarnings: string[] = [];
@@ -80,4 +80,21 @@ export function migrateV0(config: ToolchainConfig): ToolchainConfig {
 
   migrated.version = CURRENT_VERSION;
   return migrated as ToolchainConfig;
+}
+
+export function isMissingBashSourceMode(config: ToolchainConfig): boolean {
+  return config.bash?.sourceMode === undefined;
+}
+
+export function migrateMissingBashSourceMode(
+  config: ToolchainConfig,
+): ToolchainConfig {
+  return {
+    ...config,
+    bash: {
+      ...config.bash,
+      sourceMode: "override-bash",
+    },
+    version: CURRENT_VERSION,
+  };
 }

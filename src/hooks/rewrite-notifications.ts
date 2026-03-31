@@ -1,6 +1,7 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { ResolvedToolchainConfig } from "../config";
 import { analyzeRewrite } from "../rewriters";
+import { formatRewriteSourcePrefix } from "../utils/bash-composition";
 
 export function registerRewriteNotifications(
   pi: ExtensionAPI,
@@ -23,8 +24,9 @@ export function registerRewriteNotifications(
       config,
     );
 
+    const prefix = formatRewriteSourcePrefix(config.bash.sourceMode);
     for (const notice of rewriteResult.notices) {
-      ctx.ui.notify(notice.message, "warning");
+      ctx.ui.notify(`${prefix} ${notice.message}`, "warning");
     }
 
     return undefined;

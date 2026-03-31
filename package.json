@@ -44,7 +44,8 @@
     "@sinclair/typebox": "^0.34.48",
     "@types/node": "^25.0.10",
     "husky": "^9.1.7",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   },
   "pnpm": {
     "overrides": {
@@ -54,6 +55,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "lint": "biome check",
     "format": "biome check --write",
     "check:lockfile": "pnpm install --frozen-lockfile --ignore-scripts",

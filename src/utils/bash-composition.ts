@@ -1,8 +1,13 @@
 import type { BashSpawnContext } from "@mariozechner/pi-coding-agent";
+import type { BashSourceMode } from "../config";
 
 export const BASH_SPAWN_HOOK_REQUEST_EVENT = "ad:bash:spawn-hook:request";
 export const TOOLCHAIN_SPAWN_HOOK_CONTRIBUTOR_ID = "toolchain";
 export const TOOLCHAIN_SPAWN_HOOK_PRIORITY = 100;
+
+export function formatRewriteSourcePrefix(sourceMode: BashSourceMode): string {
+  return `[${sourceMode}]`;
+}
 
 export type SpawnHookContributor = {
   id: string;
