@@ -1,5 +1,11 @@
 # @aliou/pi-toolchain
 
+## 0.6.0
+
+### Minor Changes
+
+- c1cc093: Add configurable `bash.sourceMode` with deterministic `override-bash` and `composed-bash` routing for rewrite features.
+
 ## 0.5.2
 
 ### Patch Changes
