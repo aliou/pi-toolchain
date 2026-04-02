@@ -1,5 +1,11 @@
 # @aliou/pi-toolchain
 
+## 0.6.1
+
+### Patch Changes
+
+- 3d606c3: Bump pi-utils-settings to 0.12.1 to fix crash in settings UI
+
 ## 0.6.0
 
 ### Minor Changes
