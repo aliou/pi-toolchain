@@ -29,7 +29,7 @@
   "license": "MIT",
   "private": false,
   "dependencies": {
-    "@aliou/pi-utils-settings": "^0.10.0",
+    "@aliou/pi-utils-settings": "^0.12.1",
     "@aliou/sh": "^0.1.0"
   },
   "peerDependencies": {
