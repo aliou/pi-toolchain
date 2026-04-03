@@ -1,47 +1,19 @@
 name: Publish
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-    inputs:
-      skip-checks:
-        description: "Skip lint and typecheck"
-        type: boolean
-        default: false
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  check:
-    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.skip-checks) }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Typecheck
-        run: pnpm typecheck
-
   publish:
     name: Publish
-    needs: check
-    if: ${{ always() && (needs.check.result == 'success' || needs.check.result == 'skipped') }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -51,23 +23,20 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
           scope: "@aliou"
           cache: "pnpm"
-
-      - name: Upgrade npm for OIDC support
-        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -81,8 +50,12 @@ jobs:
           const release = JSON.parse(fs.readFileSync('release.json', 'utf8'));
           const releases = release.releases?.filter(r => r.type !== 'none') || [];
 
-          let title = 'Version Packages';
-          let commit = 'Version Packages';
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const packageName = pkg.name || 'unknown-package';
+          const fallbackVersion = pkg.version || '0.0.0';
+
+          let title = 'Updating ' + packageName + ' to version ' + fallbackVersion;
+          let commit = packageName + '@' + fallbackVersion;
           if (releases.length === 1) {
             const { name, newVersion } = releases[0];
             title = 'Updating ' + name + ' to version ' + newVersion;
@@ -105,8 +78,8 @@ jobs:
         with:
           version: pnpm changeset version
           publish: pnpm changeset publish
-          title: ${{ steps.release-info.outputs.title || 'Version Packages' }}
-          commit: ${{ steps.release-info.outputs.commit || 'Version Packages' }}
+          title: ${{ steps.release-info.outputs.title }}
+          commit: ${{ steps.release-info.outputs.commit }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
@@ -123,8 +96,7 @@ jobs:
           const published = JSON.parse(process.env.PUBLISHED_PACKAGES || "[]");
 
           for (const pkg of published) {
-            const shortName = pkg.name.replace(/^@[^/]+\//, "");
-            const tag = `${shortName}@${pkg.version}`;
+            const tag = `v${pkg.version}`;
 
             const existing = execSync(`git tag --list ${tag}`, { encoding: "utf8" }).trim();
             if (!existing) {
