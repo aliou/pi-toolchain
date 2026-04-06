@@ -1,5 +1,11 @@
 # @aliou/pi-toolchain
 
+## 0.6.2
+
+### Patch Changes
+
+- 67d33ce: Bump `@aliou/pi-utils-settings` to `0.13.0` to pick up the settings enum fix for `"disabled"` values.
+
 ## 0.6.1
 
 ### Patch Changes
