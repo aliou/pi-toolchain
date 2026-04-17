@@ -1,3 +1,5 @@
+![banner](https://assets.aliou.me/pi-extensions/banners/pi-toolchain.png)
+
 # Toolchain
 
 Opinionated toolchain enforcement for pi. Transparently rewrites commands to use preferred tools instead of blocking and forcing retries.
