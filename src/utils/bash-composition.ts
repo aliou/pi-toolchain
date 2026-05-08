@@ -1,4 +1,4 @@
-import type { BashSpawnContext } from "@mariozechner/pi-coding-agent";
+import type { BashSpawnContext } from "@earendil-works/pi-coding-agent";
 import type { BashSourceMode } from "../config";
 
 export const BASH_SPAWN_HOOK_REQUEST_EVENT = "ad:bash:spawn-hook:request";

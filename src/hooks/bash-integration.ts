@@ -1,7 +1,7 @@
 import {
   createBashTool,
   type ExtensionAPI,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 import type { ResolvedToolchainConfig } from "../config";
 import { createSpawnHook } from "../rewriters";
 import {

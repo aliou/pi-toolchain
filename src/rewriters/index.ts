@@ -3,7 +3,7 @@
  * rewrite analysis for optional UI notifications.
  */
 
-import type { BashSpawnContext } from "@mariozechner/pi-coding-agent";
+import type { BashSpawnContext } from "@earendil-works/pi-coding-agent";
 import type { ResolvedToolchainConfig } from "../config";
 import { createGitRebaseRewriter } from "./git-rebase";
 import { createPackageManagerRewriter } from "./package-manager";

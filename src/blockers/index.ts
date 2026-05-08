@@ -5,7 +5,7 @@
  * the rewriters. Only features with mode "block" register a blocker.
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { ResolvedToolchainConfig } from "../config";
 import { setupPackageManagerBlocker } from "./package-manager";
 import { setupPythonBlocker } from "./python";
