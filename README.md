@@ -1,4 +1,4 @@
-![banner](https://assets.aliou.me/pi-extensions/banners/pi-toolchain.png)
+![banner](https://assets.aliou.me/github/aliou/pi-toolchain/banner.png)
 
 # Toolchain
 

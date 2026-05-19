@@ -16,7 +16,7 @@
     "extensions": [
       "./src/index.ts"
     ],
-    "video": "https://assets.aliou.me/pi-extensions/demos/pi-toolchain.mp4"
+    "video": "https://assets.aliou.me/github/aliou/pi-toolchain/demo.mp4"
   },
   "publishConfig": {
     "access": "public"
