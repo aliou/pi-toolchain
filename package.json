@@ -33,7 +33,7 @@
     "@aliou/sh": "^0.1.0"
   },
   "peerDependencies": {
-    "@earendil-works/pi-coding-agent": "0.74.0"
+    "@earendil-works/pi-coding-agent": "*"
   },
   "devDependencies": {
     "@aliou/biome-plugins": "^0.3.2",
