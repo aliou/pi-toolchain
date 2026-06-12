@@ -1,25 +1,26 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it } from "vitest";
+import { registerBashIntegration } from "../extensions/toolchain/hooks/bash-integration";
+import {
+  hasRewriteFeatures,
+  registerToolCallHandler,
+} from "../extensions/toolchain/hooks/tool-call";
+import {
+  BASH_SPAWN_HOOK_REQUEST_EVENT,
+  TOOLCHAIN_SPAWN_HOOK_CONTRIBUTOR_ID,
+} from "../extensions/toolchain/utils/bash-composition";
 import {
   DEFAULT_CONFIG,
   type ResolvedToolchainConfig,
   resolveToolchainConfig,
   type ToolchainConfig,
 } from "./config";
-import { registerBashIntegration } from "./hooks/bash-integration";
-import {
-  hasRewriteFeatures,
-  registerRewriteNotifications,
-} from "./hooks/rewrite-notifications";
-import {
-  BASH_SPAWN_HOOK_REQUEST_EVENT,
-  TOOLCHAIN_SPAWN_HOOK_CONTRIBUTOR_ID,
-} from "./utils/bash-composition";
 import {
   CURRENT_VERSION,
   isMissingBashSourceMode,
   migrateV0,
-} from "./utils/migration";
+} from "./config/migration";
+import { analyzeRewrite } from "./rules";
 
 function createPiStub() {
   const toolCallHandlers: Array<Parameters<ExtensionAPI["on"]>[1]> = [];
@@ -152,7 +153,7 @@ describe("toolchain bash source mode", () => {
       ui: { showRewriteNotifications: true },
     });
 
-    registerRewriteNotifications(pi, config);
+    registerToolCallHandler(pi, config);
 
     expect(toolCallHandlers).toHaveLength(1);
 
@@ -177,5 +178,76 @@ describe("toolchain bash source mode", () => {
 
   it("DEFAULT_CONFIG keeps backward-compatible override-bash behavior", () => {
     expect(DEFAULT_CONFIG.bash.sourceMode).toBe("override-bash");
+  });
+});
+
+describe("pure rewrite engine", () => {
+  it("prefixes git rebase editor env vars in rewrite output", () => {
+    const config = withConfig({
+      features: { gitRebaseEditor: "rewrite" },
+    });
+
+    const result = analyzeRewrite(
+      { command: "git rebase -i HEAD~1", env: {} },
+      config,
+    );
+
+    expect(result.command).toBe(
+      "export GIT_EDITOR=true GIT_SEQUENCE_EDITOR=:; git rebase -i HEAD~1",
+    );
+  });
+
+  it("does not prefix git rebase when editor env already exists", () => {
+    const config = withConfig({
+      features: { gitRebaseEditor: "rewrite" },
+    });
+
+    const result = analyzeRewrite(
+      {
+        command: "git rebase -i HEAD~1",
+        env: { GIT_EDITOR: "vim" },
+      },
+      config,
+    );
+
+    expect(result.command).toBe("git rebase -i HEAD~1");
+  });
+
+  it("rewrites package manager commands", () => {
+    const config = withConfig({
+      features: { enforcePackageManager: "rewrite" },
+      packageManager: { selected: "pnpm" },
+    });
+
+    const result = analyzeRewrite({ command: "npm install" }, config);
+
+    expect(result.command).toBe("pnpm install");
+    expect(result.notices).toHaveLength(1);
+  });
+
+  it("rewrites python commands", () => {
+    const config = withConfig({
+      features: { rewritePython: "rewrite" },
+    });
+
+    const result = analyzeRewrite({ command: "python script.py" }, config);
+
+    expect(result.command).toBe("uv run python script.py");
+    expect(result.notices).toHaveLength(1);
+  });
+
+  it("returns command unchanged when no rewrite features enabled", () => {
+    const config = withConfig({
+      features: {
+        enforcePackageManager: "disabled",
+        rewritePython: "disabled",
+        gitRebaseEditor: "disabled",
+      },
+    });
+
+    const result = analyzeRewrite({ command: "npm install" }, config);
+
+    expect(result.command).toBe("npm install");
+    expect(result.notices).toHaveLength(0);
   });
 });

@@ -16,11 +16,48 @@
 
 import type { Program } from "@aliou/sh";
 import { parse } from "@aliou/sh";
-import { walkCommands, wordToString } from "../utils/shell-utils";
+import { walkCommands } from "../shell/ast";
+import { findCommandPosition } from "../shell/command-position";
+import { wordToString } from "../shell/word-to-string";
 import type { Rewriter } from "./types";
 
 const PYTHON_COMMANDS = new Set(["python", "python3"]);
 const PIP_COMMANDS = new Set(["pip", "pip3"]);
+
+const BLOCKED_PYTHON_COMMANDS = new Set([
+  "python",
+  "python3",
+  "pip",
+  "pip3",
+  "poetry",
+  "pyenv",
+  "virtualenv",
+]);
+
+const PYTHON_FALLBACK_PATTERN =
+  /\b(python|python3|pip|pip3|poetry|pyenv|virtualenv)\b/;
+
+/** Detect a python-related command. Returns the detected name or null. */
+export function detectPythonCommand(command: string): string | null {
+  let detected: string | null = null;
+
+  try {
+    const { ast } = parse(command);
+    walkCommands(ast, (cmd) => {
+      const name = cmd.words?.[0] ? wordToString(cmd.words[0]) : undefined;
+      if (name && BLOCKED_PYTHON_COMMANDS.has(name)) {
+        detected = name;
+        return true;
+      }
+      return false;
+    });
+  } catch {
+    const match = PYTHON_FALLBACK_PATTERN.exec(command);
+    if (match?.[1]) detected = match[1];
+  }
+
+  return detected;
+}
 
 interface Replacement {
   start: number;
@@ -29,12 +66,14 @@ interface Replacement {
 }
 
 export function createPythonRewriter(): Rewriter {
-  return (ctx) => {
+  return (input) => {
+    const { command } = input;
+
     let ast: Program;
     try {
-      ({ ast } = parse(ctx.command));
+      ({ ast } = parse(command));
     } catch {
-      return { ctx, notices: [] };
+      return { command, notices: [] };
     }
 
     const replacements: Replacement[] = [];
@@ -58,7 +97,7 @@ export function createPythonRewriter(): Rewriter {
           ? (replacements[replacements.length - 1] as Replacement).end
           : 0;
 
-      const idx = findCommandPosition(ctx.command, literalValue, searchFrom);
+      const idx = findCommandPosition(command, literalValue, searchFrom);
       if (idx === -1) return;
 
       if (isPython) {
@@ -80,51 +119,21 @@ export function createPythonRewriter(): Rewriter {
       return undefined;
     });
 
-    if (replacements.length === 0) return { ctx, notices: [] };
+    if (replacements.length === 0) return { command, notices: [] };
 
     // Apply replacements from right to left so offsets remain valid.
-    let result = ctx.command;
+    let result = command;
     for (let i = replacements.length - 1; i >= 0; i--) {
       const r = replacements[i] as Replacement;
       result = result.slice(0, r.start) + r.text + result.slice(r.end);
     }
 
     return {
-      ctx: { ...ctx, command: result },
+      command: result,
       notices:
-        result === ctx.command
+        result === command
           ? []
-          : [{ message: `Rewrote command: ${ctx.command} -> ${result}` }],
+          : [{ message: `Rewrote command: ${command} -> ${result}` }],
     };
   };
-}
-
-/**
- * Find the position of a command name in the source string, starting
- * from `searchFrom`. Matches on word boundary.
- */
-function findCommandPosition(
-  source: string,
-  name: string,
-  searchFrom: number,
-): number {
-  let pos = searchFrom;
-  while (pos < source.length) {
-    const idx = source.indexOf(name, pos);
-    if (idx === -1) return -1;
-
-    const before = idx > 0 ? source[idx - 1] : undefined;
-    const after =
-      idx + name.length < source.length ? source[idx + name.length] : undefined;
-
-    const validBefore =
-      before === undefined || /[\s;|&(]/.test(before) || before === "\n";
-    const validAfter =
-      after === undefined || /[\s;|&)]/.test(after) || after === "\n";
-
-    if (validBefore && validAfter) return idx;
-
-    pos = idx + 1;
-  }
-  return -1;
 }

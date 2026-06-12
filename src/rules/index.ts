@@ -1,14 +1,20 @@
 /**
- * Composes individual rewriters into a single BashSpawnHook and exposes
- * rewrite analysis for optional UI notifications.
+ * Composes individual rewriters into a single analysis function.
+ *
+ * Pure: no Pi API imports. Takes a command string (+ optional env) and
+ * returns a rewritten command string plus notices.
  */
 
-import type { BashSpawnContext } from "@earendil-works/pi-coding-agent";
 import type { ResolvedToolchainConfig } from "../config";
 import { createGitRebaseRewriter } from "./git-rebase";
 import { createPackageManagerRewriter } from "./package-manager";
 import { createPythonRewriter } from "./python";
-import type { RewriteNotice, Rewriter } from "./types";
+import type {
+  RewriteInput,
+  RewriteNotice,
+  RewriteResult,
+  Rewriter,
+} from "./types";
 
 function createRewriters(config: ResolvedToolchainConfig): Rewriter[] {
   const rewriters: Rewriter[] = [];
@@ -27,23 +33,17 @@ function createRewriters(config: ResolvedToolchainConfig): Rewriter[] {
 }
 
 export function analyzeRewrite(
-  ctx: BashSpawnContext,
+  input: RewriteInput,
   config: ResolvedToolchainConfig,
-): { ctx: BashSpawnContext; notices: RewriteNotice[] } {
-  let result = ctx;
+): RewriteResult {
+  let command = input.command;
   const notices: RewriteNotice[] = [];
 
   for (const rewrite of createRewriters(config)) {
-    const rewriteResult = rewrite(result);
-    result = rewriteResult.ctx;
-    notices.push(...rewriteResult.notices);
+    const result = rewrite({ ...input, command });
+    command = result.command;
+    notices.push(...result.notices);
   }
 
-  return { ctx: result, notices };
-}
-
-export function createSpawnHook(
-  config: ResolvedToolchainConfig,
-): (ctx: BashSpawnContext) => BashSpawnContext {
-  return (ctx) => analyzeRewrite(ctx, config).ctx;
+  return { command, notices };
 }
