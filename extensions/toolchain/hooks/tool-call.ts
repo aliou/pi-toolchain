@@ -1,7 +1,7 @@
 /**
- * Combined tool_call handler for blockers and rewrite notifications.
+ * Combined tool_call handler for blockers and mutation notifications.
  *
- * Blockers run first. A blocked command never reaches the rewrite
+ * Blockers run first. A blocked command never reaches the mutation
  * notification check. Only features with mode "block" or notifications
  * enabled register here.
  */
@@ -11,7 +11,7 @@ import type { ResolvedToolchainConfig } from "../../../src/config";
 import { analyzeRewrite } from "../../../src/rules";
 import { detectForeignPackageManager } from "../../../src/rules/package-manager";
 import { detectPythonCommand } from "../../../src/rules/python";
-import { formatRewriteSourcePrefix } from "../utils/bash-composition";
+import { formatMutationSourcePrefix } from "../utils/bash-composition";
 
 // --- Blocker detection ---
 
@@ -24,7 +24,7 @@ function checkPackageManagerBlocker(
   command: string,
   config: ResolvedToolchainConfig,
 ): BlockResult | null {
-  if (config.features.enforcePackageManager !== "block") return null;
+  if (config.features.packageManager !== "block") return null;
 
   const detected = detectForeignPackageManager(
     command,
@@ -46,7 +46,7 @@ function checkPythonBlocker(
   command: string,
   config: ResolvedToolchainConfig,
 ): BlockResult | null {
-  if (config.features.rewritePython !== "block") return null;
+  if (config.features.python !== "block") return null;
 
   const detected = detectPythonCommand(command);
   if (!detected) return null;
@@ -90,8 +90,8 @@ export function registerToolCallHandler(
       return { block: true, reason: blocked.reason };
     }
 
-    // Rewrite notifications
-    if (config.ui.showRewriteNotifications) {
+    // Mutation notifications
+    if (config.ui.showMutationNotifications) {
       // NOTE: process.env is used here while the spawn hook path uses ctx.env.
       // They can diverge if Pi augments ctx.env for a given execution.
       const rewriteResult = analyzeRewrite(
@@ -102,7 +102,7 @@ export function registerToolCallHandler(
         config,
       );
 
-      const prefix = formatRewriteSourcePrefix(config.bash.sourceMode);
+      const prefix = formatMutationSourcePrefix(config.bash.sourceMode);
       for (const notice of rewriteResult.notices) {
         ctx.ui.notify(`${prefix} ${notice.message}`, "warning");
       }
@@ -114,16 +114,16 @@ export function registerToolCallHandler(
 
 export function hasToolCallFeatures(config: ResolvedToolchainConfig): boolean {
   return (
-    config.features.enforcePackageManager === "block" ||
-    config.features.rewritePython === "block" ||
-    config.ui.showRewriteNotifications
+    config.features.packageManager === "block" ||
+    config.features.python === "block" ||
+    config.ui.showMutationNotifications
   );
 }
 
-export function hasRewriteFeatures(config: ResolvedToolchainConfig): boolean {
+export function hasMutationFeatures(config: ResolvedToolchainConfig): boolean {
   return (
-    config.features.enforcePackageManager === "rewrite" ||
-    config.features.rewritePython === "rewrite" ||
-    config.features.gitRebaseEditor === "rewrite"
+    config.features.packageManager === "mutate" ||
+    config.features.python === "mutate" ||
+    config.features.gitRebaseEditor === "mutate"
   );
 }

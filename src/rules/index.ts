@@ -19,13 +19,13 @@ import type {
 function createRewriters(config: ResolvedToolchainConfig): Rewriter[] {
   const rewriters: Rewriter[] = [];
 
-  if (config.features.enforcePackageManager === "rewrite") {
+  if (config.features.packageManager === "mutate") {
     rewriters.push(createPackageManagerRewriter(config));
   }
-  if (config.features.rewritePython === "rewrite") {
+  if (config.features.python === "mutate") {
     rewriters.push(createPythonRewriter());
   }
-  if (config.features.gitRebaseEditor === "rewrite") {
+  if (config.features.gitRebaseEditor === "mutate") {
     rewriters.push(createGitRebaseRewriter());
   }
 
