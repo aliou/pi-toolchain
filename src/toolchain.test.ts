@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it } from "vitest";
 import { registerBashIntegration } from "../extensions/toolchain/hooks/bash-integration";
 import {
-  hasRewriteFeatures,
+  hasMutationFeatures,
   registerToolCallHandler,
 } from "../extensions/toolchain/hooks/tool-call";
 import {
@@ -18,7 +18,10 @@ import {
 import {
   CURRENT_VERSION,
   isMissingBashSourceMode,
+  migrateMissingBashSourceMode,
+  migrateRenameKeys,
   migrateV0,
+  needsKeyRename,
 } from "./config/migration";
 import { analyzeRewrite } from "./rules";
 
@@ -50,13 +53,31 @@ function withConfig(partial: ToolchainConfig): ResolvedToolchainConfig {
   return resolveToolchainConfig(partial);
 }
 
-describe("toolchain bash source mode", () => {
-  it("defaults bash.sourceMode to override-bash", () => {
-    const resolved = resolveToolchainConfig({
-      features: { enforcePackageManager: "rewrite" },
-    });
+// --- Config defaults ---
 
+describe("toolchain config defaults", () => {
+  it("defaults gitRebaseEditor to mutate", () => {
+    const resolved = resolveToolchainConfig({});
+    expect(resolved.features.gitRebaseEditor).toBe("mutate");
+  });
+
+  it("defaults packageManager and python to disabled", () => {
+    const resolved = resolveToolchainConfig({});
+    expect(resolved.features.packageManager).toBe("disabled");
+    expect(resolved.features.python).toBe("disabled");
+  });
+
+  it("defaults bash.sourceMode to override-bash", () => {
+    const resolved = resolveToolchainConfig({});
     expect(resolved.bash.sourceMode).toBe("override-bash");
+  });
+
+  it("DEFAULT_CONFIG has mutation surface", () => {
+    expect(DEFAULT_CONFIG.features.packageManager).toBe("disabled");
+    expect(DEFAULT_CONFIG.features.python).toBe("disabled");
+    expect(DEFAULT_CONFIG.features.gitRebaseEditor).toBe("mutate");
+    expect(DEFAULT_CONFIG.ui.showMutationNotifications).toBe(false);
+    expect(DEFAULT_CONFIG.bash.sourceMode).toBe("override-bash");
   });
 
   it("rejects invalid bash.sourceMode", () => {
@@ -69,18 +90,168 @@ describe("toolchain bash source mode", () => {
     ).toThrow(/bash\.sourceMode must be "override-bash" or "composed-bash"/);
   });
 
-  it("migrateV0 handles legacy feature migration and leaves sourceMode to the dedicated migration", () => {
+  it("rejects gitRebaseEditor block mode", () => {
+    expect(() =>
+      resolveToolchainConfig({
+        features: { gitRebaseEditor: "block" },
+      }),
+    ).toThrow(/gitRebaseEditor must be "disabled" or "mutate"/);
+  });
+});
+
+// --- Migration ---
+
+describe("toolchain migration", () => {
+  it("migrateV0 maps boolean true to mutate", () => {
     const migrated = migrateV0({
       enabled: true,
       features: {
-        enforcePackageManager: true as unknown as never,
+        enforcePackageManager: true,
+      } as unknown as ToolchainConfig["features"],
+    });
+
+    // v0 migration still uses old key names; rename migration handles those
+    expect(
+      (migrated.features as Record<string, unknown>).enforcePackageManager,
+    ).toBe("mutate");
+  });
+
+  it("migrateV0 maps boolean false to disabled", () => {
+    const migrated = migrateV0({
+      enabled: true,
+      features: {
+        enforcePackageManager: false,
+      } as unknown as ToolchainConfig["features"],
+    });
+
+    expect(
+      (migrated.features as Record<string, unknown>).enforcePackageManager,
+    ).toBe("disabled");
+  });
+
+  it("migrateRenameKeys renames enforcePackageManager -> packageManager with mutate mode", () => {
+    const migrated = migrateRenameKeys({
+      version: "0.5.2-20260331",
+      features: {
+        enforcePackageManager: "rewrite",
+      } as unknown as ToolchainConfig["features"],
+    });
+
+    expect(migrated.features?.packageManager).toBe("mutate");
+    expect(
+      (migrated.features as Record<string, unknown>).enforcePackageManager,
+    ).toBeUndefined();
+  });
+
+  it("migrateRenameKeys renames rewritePython -> python with mutate mode", () => {
+    const migrated = migrateRenameKeys({
+      version: "0.5.2-20260331",
+      features: {
+        rewritePython: "rewrite",
+      } as unknown as ToolchainConfig["features"],
+    });
+
+    expect(migrated.features?.python).toBe("mutate");
+    expect(
+      (migrated.features as Record<string, unknown>).rewritePython,
+    ).toBeUndefined();
+  });
+
+  it("migrateRenameKeys mutates gitRebaseEditor rewrite -> mutate", () => {
+    const migrated = migrateRenameKeys({
+      version: "0.5.2-20260331",
+      features: {
+        gitRebaseEditor: "rewrite" as unknown as never,
       },
     });
 
-    expect(migrated.bash?.sourceMode).toBeUndefined();
-    expect(isMissingBashSourceMode(migrated)).toBe(true);
-    expect(migrated.version).toBe(CURRENT_VERSION);
-    expect(migrated.features?.enforcePackageManager).toBe("rewrite");
+    expect(migrated.features?.gitRebaseEditor).toBe("mutate");
+  });
+
+  it("migrateRenameKeys migrates ui.showRewriteNotifications -> showMutationNotifications", () => {
+    const migrated = migrateRenameKeys({
+      version: "0.5.2-20260331",
+      ui: {
+        showRewriteNotifications: true,
+      } as unknown as ToolchainConfig["ui"],
+    });
+
+    expect(migrated.ui?.showMutationNotifications).toBe(true);
+    expect(
+      (migrated.ui as Record<string, unknown>).showRewriteNotifications,
+    ).toBeUndefined();
+  });
+
+  it("migrateRenameKeys preserves new keys when both old and new exist", () => {
+    const migrated = migrateRenameKeys({
+      version: "0.5.2-20260331",
+      features: {
+        enforcePackageManager: "disabled",
+        packageManager: "mutate",
+      } as unknown as ToolchainConfig["features"],
+    });
+
+    expect(migrated.features?.packageManager).toBe("mutate");
+    expect(
+      (migrated.features as Record<string, unknown>).enforcePackageManager,
+    ).toBeUndefined();
+  });
+
+  it("migrateRenameKeys leaves non-rewrite modes unchanged", () => {
+    const migrated = migrateRenameKeys({
+      version: "0.5.2-20260331",
+      features: {
+        enforcePackageManager: "block",
+      } as unknown as ToolchainConfig["features"],
+    });
+
+    expect(migrated.features?.packageManager).toBe("block");
+  });
+
+  it("needsKeyRename detects old keys", () => {
+    expect(
+      needsKeyRename({
+        version: "0.5.2-20260331",
+        features: {
+          enforcePackageManager: "disabled",
+        } as unknown as ToolchainConfig["features"],
+      }),
+    ).toBe(true);
+  });
+
+  it("needsKeyRename detects rewrite mode value", () => {
+    expect(
+      needsKeyRename({
+        version: "0.5.2-20260331",
+        features: {
+          packageManager: "rewrite",
+        } as unknown as ToolchainConfig["features"],
+      }),
+    ).toBe(true);
+  });
+
+  it("needsKeyRename detects old ui key", () => {
+    expect(
+      needsKeyRename({
+        version: "0.5.2-20260331",
+        ui: {
+          showRewriteNotifications: true,
+        } as unknown as ToolchainConfig["ui"],
+      }),
+    ).toBe(true);
+  });
+
+  it("needsKeyRename returns false for current schema", () => {
+    expect(
+      needsKeyRename({
+        version: CURRENT_VERSION,
+        features: { packageManager: "mutate" },
+      }),
+    ).toBe(false);
+  });
+
+  it("isMissingBashSourceMode detects missing sourceMode", () => {
+    expect(isMissingBashSourceMode({ version: CURRENT_VERSION })).toBe(true);
   });
 
   it("does not run missing-source-mode migration when sourceMode already exists", () => {
@@ -95,22 +266,69 @@ describe("toolchain bash source mode", () => {
     );
   });
 
-  it("hasRewriteFeatures is false when no rewrite feature is enabled", () => {
+  it("resolves v0 config through migration chain", () => {
+    // Simulate the migration chain: v0 -> add-bash-source-mode -> rename-keys
+    let config: ToolchainConfig = {
+      enabled: true,
+      features: {
+        enforcePackageManager: true,
+      } as unknown as ToolchainConfig["features"],
+    };
+
+    // Step 1: v0 migration (boolean -> FeatureMode)
+    config = migrateV0(config);
+    expect(
+      (config.features as Record<string, unknown>).enforcePackageManager,
+    ).toBe("mutate");
+
+    // Step 2: add-bash-source-mode
+    config = migrateMissingBashSourceMode(config);
+    expect(config.bash?.sourceMode).toBe("override-bash");
+
+    // Step 3: rename keys
+    expect(needsKeyRename(config)).toBe(true);
+    config = migrateRenameKeys(config);
+    expect(config.features?.packageManager).toBe("mutate");
+    expect(
+      (config.features as Record<string, unknown>).enforcePackageManager,
+    ).toBeUndefined();
+
+    // Final: resolve defaults
+    const resolved = resolveToolchainConfig(config);
+    expect(resolved.features.packageManager).toBe("mutate");
+  });
+});
+
+// --- Feature predicates ---
+
+describe("feature predicates", () => {
+  it("hasMutationFeatures is true when a feature is in mutate mode", () => {
+    const config = withConfig({
+      features: { packageManager: "mutate" },
+    });
+    expect(hasMutationFeatures(config)).toBe(true);
+  });
+
+  it("hasMutationFeatures is false when no mutate feature is enabled", () => {
     const config = withConfig({
       features: {
-        enforcePackageManager: "block",
-        rewritePython: "disabled",
+        packageManager: "block",
+        python: "disabled",
         gitRebaseEditor: "disabled",
       },
     });
 
-    expect(hasRewriteFeatures(config)).toBe(false);
+    expect(hasMutationFeatures(config)).toBe(false);
   });
+});
 
+// --- Bash integration (Phase 3: still working, Phase 4 removes) ---
+
+describe("toolchain bash source mode", () => {
   it("registers local bash in override-bash mode", () => {
     const { pi, eventHandlers, registeredTools } = createPiStub();
     const config = withConfig({
-      features: { enforcePackageManager: "rewrite" },
+      features: { packageManager: "mutate" },
       bash: { sourceMode: "override-bash" },
     });
 
@@ -123,7 +341,7 @@ describe("toolchain bash source mode", () => {
   it("contributes to composer in composed-bash mode", () => {
     const { pi, eventHandlers, registeredTools } = createPiStub();
     const config = withConfig({
-      features: { enforcePackageManager: "rewrite" },
+      features: { packageManager: "mutate" },
       bash: { sourceMode: "composed-bash" },
     });
 
@@ -145,12 +363,12 @@ describe("toolchain bash source mode", () => {
     expect(contributions[0]?.spawnHook).toBeTypeOf("function");
   });
 
-  it("rewrite notifications include source-mode prefix", async () => {
+  it("mutation notifications include source-mode prefix", async () => {
     const { pi, toolCallHandlers } = createPiStub();
     const config = withConfig({
-      features: { gitRebaseEditor: "rewrite" },
+      features: { gitRebaseEditor: "mutate" },
       bash: { sourceMode: "composed-bash" },
-      ui: { showRewriteNotifications: true },
+      ui: { showMutationNotifications: true },
     });
 
     registerToolCallHandler(pi, config);
@@ -175,16 +393,14 @@ describe("toolchain bash source mode", () => {
     expect(messages).toHaveLength(1);
     expect(messages[0] ?? "").toMatch(/^\[composed-bash\] /);
   });
-
-  it("DEFAULT_CONFIG keeps backward-compatible override-bash behavior", () => {
-    expect(DEFAULT_CONFIG.bash.sourceMode).toBe("override-bash");
-  });
 });
 
-describe("pure rewrite engine", () => {
-  it("prefixes git rebase editor env vars in rewrite output", () => {
+// --- Pure rewrite/mutation engine ---
+
+describe("pure mutation engine", () => {
+  it("prefixes git rebase editor env vars in mutate output", () => {
     const config = withConfig({
-      features: { gitRebaseEditor: "rewrite" },
+      features: { gitRebaseEditor: "mutate" },
     });
 
     const result = analyzeRewrite(
@@ -199,7 +415,7 @@ describe("pure rewrite engine", () => {
 
   it("does not prefix git rebase when editor env already exists", () => {
     const config = withConfig({
-      features: { gitRebaseEditor: "rewrite" },
+      features: { gitRebaseEditor: "mutate" },
     });
 
     const result = analyzeRewrite(
@@ -213,9 +429,9 @@ describe("pure rewrite engine", () => {
     expect(result.command).toBe("git rebase -i HEAD~1");
   });
 
-  it("rewrites package manager commands", () => {
+  it("mutates package manager commands", () => {
     const config = withConfig({
-      features: { enforcePackageManager: "rewrite" },
+      features: { packageManager: "mutate" },
       packageManager: { selected: "pnpm" },
     });
 
@@ -225,9 +441,9 @@ describe("pure rewrite engine", () => {
     expect(result.notices).toHaveLength(1);
   });
 
-  it("rewrites python commands", () => {
+  it("mutates python commands", () => {
     const config = withConfig({
-      features: { rewritePython: "rewrite" },
+      features: { python: "mutate" },
     });
 
     const result = analyzeRewrite({ command: "python script.py" }, config);
@@ -236,11 +452,11 @@ describe("pure rewrite engine", () => {
     expect(result.notices).toHaveLength(1);
   });
 
-  it("returns command unchanged when no rewrite features enabled", () => {
+  it("returns command unchanged when no mutate features enabled", () => {
     const config = withConfig({
       features: {
-        enforcePackageManager: "disabled",
-        rewritePython: "disabled",
+        packageManager: "disabled",
+        python: "disabled",
         gitRebaseEditor: "disabled",
       },
     });

@@ -5,7 +5,9 @@ export {
   isMissingBashSourceMode,
   isV0,
   migrateMissingBashSourceMode,
+  migrateRenameKeys,
   migrateV0,
+  needsKeyRename,
   pendingWarnings,
 } from "./migration";
 export type {

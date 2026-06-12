@@ -12,22 +12,22 @@ const FEATURE_UI: Record<
   FeatureKey,
   { label: string; description: string; modes: FeatureMode[] }
 > = {
-  enforcePackageManager: {
-    label: "Enforce package manager",
+  packageManager: {
+    label: "Package manager enforcement",
     description:
-      "Rewrite or block npm/yarn/bun commands to use the selected package manager",
-    modes: ["disabled", "rewrite", "block"],
+      "Mutate or block npm/yarn/bun commands to use the selected package manager",
+    modes: ["disabled", "mutate", "block"],
   },
-  rewritePython: {
+  python: {
     label: "Python commands",
-    description: "Rewrite or block python/pip commands to use uv equivalents",
-    modes: ["disabled", "rewrite", "block"],
+    description: "Mutate or block python/pip commands to use uv equivalents",
+    modes: ["disabled", "mutate", "block"],
   },
   gitRebaseEditor: {
     label: "Git rebase editor",
     description:
-      "Inject GIT_EDITOR and GIT_SEQUENCE_EDITOR for non-interactive rebase (rewrite only)",
-    modes: ["disabled", "rewrite"],
+      "Inject GIT_EDITOR and GIT_SEQUENCE_EDITOR for non-interactive rebase (mutate only)",
+    modes: ["disabled", "mutate"],
   },
 };
 
@@ -58,7 +58,7 @@ export function buildToolchainSettingsSections(
           id: "packageManager.selected",
           label: "Selected manager",
           description:
-            "Package manager to use when enforcePackageManager is enabled",
+            "Package manager to use when packageManager feature is enabled",
           currentValue:
             tabConfig?.packageManager?.selected ??
             resolved.packageManager.selected,
@@ -73,7 +73,7 @@ export function buildToolchainSettingsSections(
           id: "bash.sourceMode",
           label: "Source mode",
           description:
-            "override-bash: toolchain registers bash when rewrite is active. composed-bash: toolchain contributes rewrite hook to external bash composer.",
+            "override-bash: toolchain registers bash when mutate is active. composed-bash: toolchain contributes mutation hook to external bash composer.",
           currentValue: tabConfig?.bash?.sourceMode ?? resolved.bash.sourceMode,
           values: [...BASH_SOURCE_MODES],
         },

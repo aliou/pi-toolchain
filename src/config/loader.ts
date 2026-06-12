@@ -4,7 +4,9 @@ import {
   isMissingBashSourceMode,
   isV0,
   migrateMissingBashSourceMode,
+  migrateRenameKeys,
   migrateV0,
+  needsKeyRename,
 } from "./migration";
 import type { ResolvedToolchainConfig, ToolchainConfig } from "./types";
 
@@ -19,7 +21,14 @@ const migrations: Migration<ToolchainConfig>[] = [
     shouldRun: (config) => isMissingBashSourceMode(config),
     run: (config) => migrateMissingBashSourceMode(config),
   },
+  {
+    name: "rename-keys-and-mutate-mode",
+    shouldRun: (config) => needsKeyRename(config),
+    run: (config) => migrateRenameKeys(config),
+  },
 ];
+
+const VALID_FEATURE_MODES = new Set<string>(["disabled", "mutate", "block"]);
 
 function isValidBashSourceMode(value: unknown): value is string {
   return value === "override-bash" || value === "composed-bash";
@@ -44,9 +53,27 @@ function deepMerge(target: object, source: object): void {
   }
 }
 
+function assertFeatureMode(name: string, value: string): void {
+  if (!VALID_FEATURE_MODES.has(value)) {
+    throw new Error(
+      `[toolchain] Invalid config: features.${name} must be "disabled", "mutate", or "block"`,
+    );
+  }
+}
+
 function validateResolvedConfig(
   config: ResolvedToolchainConfig,
 ): ResolvedToolchainConfig {
+  assertFeatureMode("packageManager", config.features.packageManager);
+  assertFeatureMode("python", config.features.python);
+  assertFeatureMode("gitRebaseEditor", config.features.gitRebaseEditor);
+
+  if (config.features.gitRebaseEditor === "block") {
+    throw new Error(
+      '[toolchain] Invalid config: features.gitRebaseEditor must be "disabled" or "mutate" (block is not supported)',
+    );
+  }
+
   if (!isValidBashSourceMode(config.bash.sourceMode)) {
     throw new Error(
       '[toolchain] Invalid config: bash.sourceMode must be "override-bash" or "composed-bash"',

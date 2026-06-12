@@ -3,9 +3,9 @@ import type { ResolvedToolchainConfig } from "./types";
 export const DEFAULT_CONFIG: ResolvedToolchainConfig = {
   enabled: true,
   features: {
-    enforcePackageManager: "disabled",
-    rewritePython: "disabled",
-    gitRebaseEditor: "rewrite",
+    packageManager: "disabled",
+    python: "disabled",
+    gitRebaseEditor: "mutate",
   },
   packageManager: {
     selected: "pnpm",
@@ -14,6 +14,6 @@ export const DEFAULT_CONFIG: ResolvedToolchainConfig = {
     sourceMode: "override-bash",
   },
   ui: {
-    showRewriteNotifications: false,
+    showMutationNotifications: false,
   },
 };

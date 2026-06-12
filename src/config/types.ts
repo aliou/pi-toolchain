@@ -6,19 +6,19 @@
  *
  * Feature modes:
  * - "disabled": feature is off
- * - "rewrite": transparently rewrite matching commands via spawn hook
- * - "block": block matching commands via tool_call hook (bash tool not overridden)
+ * - "mutate": transparently mutate matching commands before shell execution
+ * - "block": block matching commands via tool_call hook
  */
 
-export type FeatureMode = "disabled" | "rewrite" | "block";
+export type FeatureMode = "disabled" | "mutate" | "block";
 export type BashSourceMode = "override-bash" | "composed-bash";
 
 export interface ToolchainConfig {
   version?: string;
   enabled?: boolean;
   features?: {
-    enforcePackageManager?: FeatureMode;
-    rewritePython?: FeatureMode;
+    packageManager?: FeatureMode;
+    python?: FeatureMode;
     gitRebaseEditor?: FeatureMode;
   };
   packageManager?: {
@@ -28,15 +28,15 @@ export interface ToolchainConfig {
     sourceMode?: BashSourceMode;
   };
   ui?: {
-    showRewriteNotifications?: boolean;
+    showMutationNotifications?: boolean;
   };
 }
 
 export interface ResolvedToolchainConfig {
   enabled: boolean;
   features: {
-    enforcePackageManager: FeatureMode;
-    rewritePython: FeatureMode;
+    packageManager: FeatureMode;
+    python: FeatureMode;
     gitRebaseEditor: FeatureMode;
   };
   packageManager: {
@@ -46,6 +46,6 @@ export interface ResolvedToolchainConfig {
     sourceMode: BashSourceMode;
   };
   ui: {
-    showRewriteNotifications: boolean;
+    showMutationNotifications: boolean;
   };
 }

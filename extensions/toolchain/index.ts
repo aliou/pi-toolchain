@@ -3,7 +3,7 @@ import { configLoader } from "../../src/config";
 import { registerBashIntegration } from "./hooks/bash-integration";
 import { registerSessionStartWarnings } from "./hooks/session-start";
 import {
-  hasRewriteFeatures,
+  hasMutationFeatures,
   hasToolCallFeatures,
   registerToolCallHandler,
 } from "./hooks/tool-call";
@@ -16,7 +16,7 @@ import { registerToolchainSettings } from "./settings";
  * set to one of three modes:
  *
  * - "disabled": no action taken
- * - "rewrite": transparently rewrite commands via spawn hook
+ * - "mutate": transparently mutate commands before shell execution
  * - "block": block commands via tool_call hook
  *
  * Configuration:
@@ -35,6 +35,6 @@ export default async function (pi: ExtensionAPI) {
     registerToolCallHandler(pi, config);
   }
 
-  if (!hasRewriteFeatures(config)) return;
+  if (!hasMutationFeatures(config)) return;
   registerBashIntegration(pi, config);
 }
