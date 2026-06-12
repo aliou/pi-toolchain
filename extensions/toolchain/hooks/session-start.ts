@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { pendingWarnings } from "../utils/migration";
+import { pendingWarnings } from "../../../src/config/migration";
 
 export function registerSessionStartWarnings(pi: ExtensionAPI): void {
   pi.on("session_start", (_event, ctx) => {

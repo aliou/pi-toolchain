@@ -12,7 +12,7 @@
  * - features.preventDockerSecrets: removed (warn to use pi-guardrails)
  */
 
-import type { FeatureMode, ToolchainConfig } from "../config";
+import type { FeatureMode, ToolchainConfig } from "./types";
 
 /**
  * Config schema version. Bump only when a migration is added.

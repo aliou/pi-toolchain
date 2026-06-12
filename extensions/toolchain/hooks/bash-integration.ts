@@ -1,9 +1,10 @@
 import {
+  type BashSpawnContext,
   createBashTool,
   type ExtensionAPI,
 } from "@earendil-works/pi-coding-agent";
-import type { ResolvedToolchainConfig } from "../config";
-import { createSpawnHook } from "../rewriters";
+import type { ResolvedToolchainConfig } from "../../../src/config";
+import { analyzeRewrite } from "../../../src/rules";
 import {
   BASH_SPAWN_HOOK_REQUEST_EVENT,
   isSpawnHookRequestPayload,
@@ -32,4 +33,23 @@ export function registerBashIntegration(
 
   const bashTool = createBashTool(process.cwd(), { spawnHook });
   pi.registerTool({ ...bashTool });
+}
+
+function createSpawnHook(config: ResolvedToolchainConfig) {
+  return (ctx: BashSpawnContext): BashSpawnContext => {
+    const result = analyzeRewrite(
+      {
+        command: ctx.command,
+        env: ctx.env,
+      },
+      config,
+    );
+
+    if (result.command === ctx.command) return ctx;
+
+    return {
+      ...ctx,
+      command: result.command,
+    };
+  };
 }

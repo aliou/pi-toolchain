@@ -12,12 +12,43 @@
 import type { Program } from "@aliou/sh";
 import { parse } from "@aliou/sh";
 import type { ResolvedToolchainConfig } from "../config";
-import { walkCommands, wordToString } from "../utils/shell-utils";
+import { walkCommands } from "../shell/ast";
+import { findCommandPosition } from "../shell/command-position";
+import { wordToString } from "../shell/word-to-string";
 import type { Rewriter } from "./types";
 
 type PackageManager = "bun" | "pnpm" | "npm";
 
 const ALL_MANAGERS = new Set<string>(["bun", "pnpm", "npm", "npx", "yarn"]);
+
+/** Detect a non-selected package manager command. Returns the detected name or null. */
+export function detectForeignPackageManager(
+  command: string,
+  selected: PackageManager,
+): string | null {
+  let detected: string | null = null;
+
+  try {
+    const { ast } = parse(command);
+    walkCommands(ast, (cmd) => {
+      const name = cmd.words?.[0] ? wordToString(cmd.words[0]) : undefined;
+      if (name && ALL_MANAGERS.has(name) && name !== selected) {
+        detected = name;
+        return true;
+      }
+      return false;
+    });
+  } catch {
+    for (const mgr of ALL_MANAGERS) {
+      if (mgr !== selected && new RegExp(`\\b${mgr}\\b`).test(command)) {
+        detected = mgr;
+        break;
+      }
+    }
+  }
+
+  return detected;
+}
 
 /** Maps npx-like commands to the selected manager's equivalent. */
 const NPX_EQUIVALENT: Record<PackageManager, string> = {
@@ -40,12 +71,14 @@ export function createPackageManagerRewriter(
 ): Rewriter {
   const selected = config.packageManager.selected;
 
-  return (ctx) => {
+  return (input) => {
+    const { command } = input;
+
     let ast: Program;
     try {
-      ({ ast } = parse(ctx.command));
+      ({ ast } = parse(command));
     } catch {
-      return { ctx, notices: [] };
+      return { command, notices: [] };
     }
 
     const replacements: Replacement[] = [];
@@ -72,7 +105,7 @@ export function createPackageManagerRewriter(
           ? (replacements[replacements.length - 1] as Replacement).end
           : 0;
 
-      const idx = findCommandPosition(ctx.command, literalValue, searchFrom);
+      const idx = findCommandPosition(command, literalValue, searchFrom);
       if (idx === -1) return;
 
       if (name === "npx") {
@@ -99,54 +132,21 @@ export function createPackageManagerRewriter(
       return undefined;
     });
 
-    if (replacements.length === 0) return { ctx, notices: [] };
+    if (replacements.length === 0) return { command, notices: [] };
 
     // Apply replacements from right to left so offsets remain valid.
-    let result = ctx.command;
+    let result = command;
     for (let i = replacements.length - 1; i >= 0; i--) {
       const r = replacements[i] as Replacement;
       result = result.slice(0, r.start) + r.text + result.slice(r.end);
     }
 
     return {
-      ctx: { ...ctx, command: result },
+      command: result,
       notices:
-        result === ctx.command
+        result === command
           ? []
-          : [{ message: `Rewrote command: ${ctx.command} -> ${result}` }],
+          : [{ message: `Rewrote command: ${command} -> ${result}` }],
     };
   };
-}
-
-/**
- * Find the position of a command name in the source string, starting
- * from `searchFrom`. Matches on word boundary to avoid matching inside
- * paths or URLs.
- */
-function findCommandPosition(
-  source: string,
-  name: string,
-  searchFrom: number,
-): number {
-  let pos = searchFrom;
-  while (pos < source.length) {
-    const idx = source.indexOf(name, pos);
-    if (idx === -1) return -1;
-
-    // Check word boundaries: char before must be start-of-string or
-    // a shell delimiter, char after must be end-of-string or delimiter.
-    const before = idx > 0 ? source[idx - 1] : undefined;
-    const after =
-      idx + name.length < source.length ? source[idx + name.length] : undefined;
-
-    const validBefore =
-      before === undefined || /[\s;|&(]/.test(before) || before === "\n";
-    const validAfter =
-      after === undefined || /[\s;|&)]/.test(after) || after === "\n";
-
-    if (validBefore && validAfter) return idx;
-
-    pos = idx + 1;
-  }
-  return -1;
 }

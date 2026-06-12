@@ -9,21 +9,24 @@
  *
  * Skips injection if the command already has editor configuration via
  * AST assignments or existing env vars.
+ *
+ * In the pure layer, env injection is done by prefixing the command:
+ *   git rebase -i HEAD~1
+ *   -> GIT_EDITOR=true GIT_SEQUENCE_EDITOR=: git rebase -i HEAD~1
  */
 
 import { parse } from "@aliou/sh";
-import {
-  walkCommandsWithAssignments,
-  wordToString,
-} from "../utils/shell-utils";
+import { walkCommandsWithAssignments } from "../shell/ast";
+import { wordToString } from "../shell/word-to-string";
 import type { Rewriter } from "./types";
 
 export function createGitRebaseRewriter(): Rewriter {
-  return (ctx) => {
+  return (input) => {
+    const { command } = input;
     let needsEditor = false;
 
     try {
-      const { ast } = parse(ctx.command);
+      const { ast } = parse(command);
 
       walkCommandsWithAssignments(ast, (cmd, assignments) => {
         const words = (cmd.words ?? []).map(wordToString);
@@ -37,30 +40,26 @@ export function createGitRebaseRewriter(): Rewriter {
       });
     } catch {
       // Fallback: check raw string for git rebase pattern
-      if (/\bgit\s+rebase\b/.test(ctx.command)) {
+      if (/\bgit\s+rebase\b/.test(command)) {
         // Skip if already has editor config
-        if (!/GIT_SEQUENCE_EDITOR|GIT_EDITOR|core\.editor/.test(ctx.command)) {
+        if (!/GIT_SEQUENCE_EDITOR|GIT_EDITOR|core\.editor/.test(command)) {
           needsEditor = true;
         }
       }
     }
 
-    if (!needsEditor) return { ctx, notices: [] };
+    if (!needsEditor) return { command, notices: [] };
 
     // Skip if env vars already set in the context
-    if (ctx.env.GIT_EDITOR || ctx.env.GIT_SEQUENCE_EDITOR) {
-      return { ctx, notices: [] };
+    if (input.env?.GIT_EDITOR || input.env?.GIT_SEQUENCE_EDITOR) {
+      return { command, notices: [] };
     }
 
+    // Use `export` so env vars apply to ALL commands in a compound expression
+    // (e.g. `git fetch && git rebase`). Plain `KEY=val cmd` only applies to
+    // the first command, which is wrong when `git rebase` is not the first token.
     return {
-      ctx: {
-        ...ctx,
-        env: {
-          ...ctx.env,
-          GIT_EDITOR: "true",
-          GIT_SEQUENCE_EDITOR: ":",
-        },
-      },
+      command: `export GIT_EDITOR=true GIT_SEQUENCE_EDITOR=:; ${command}`,
       notices: [
         {
           message:
