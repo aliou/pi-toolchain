@@ -2,6 +2,9 @@
   "name": "@aliou/pi-toolchain",
   "version": "0.7.0",
   "packageManager": "pnpm@10.26.1",
+  "engines": {
+    "node": ">=22"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/aliou/pi-toolchain"
@@ -14,7 +17,7 @@
   ],
   "pi": {
     "extensions": [
-      "./src/index.ts"
+      "./extensions/toolchain/index.ts"
     ],
     "video": "https://assets.aliou.me/github/aliou/pi-toolchain/demo.mp4"
   },
@@ -23,30 +26,32 @@
   },
   "files": [
     "src",
+    "extensions",
     "README.md",
-    "!src/**/*.test.ts"
+    "!src/**/*.test.ts",
+    "!extensions/**/*.test.ts"
   ],
   "type": "module",
   "license": "MIT",
   "private": false,
   "dependencies": {
-    "@aliou/pi-utils-settings": "^0.15.0",
-    "@aliou/sh": "^0.1.0"
+    "@aliou/pi-utils-settings": "^0.17.0",
+    "@aliou/sh": "^0.2.0"
   },
   "peerDependencies": {
-    "@earendil-works/pi-coding-agent": "0.74.0"
+    "@earendil-works/pi-coding-agent": ">=0.74.0 <1",
+    "@earendil-works/pi-tui": ">=0.74.0 <1"
   },
   "devDependencies": {
-    "@aliou/biome-plugins": "^0.8.1",
-    "@biomejs/biome": "^2.4.15",
-    "@changesets/cli": "^2.27.11",
-    "@earendil-works/pi-coding-agent": "0.74.0",
-    "@earendil-works/pi-tui": "0.74.0",
-    "@sinclair/typebox": "^0.34.48",
-    "@types/node": "^25.0.10",
+    "@aliou/biome-plugins": "^0.10.0",
+    "@biomejs/biome": "^2.4.16",
+    "@changesets/cli": "^2.31.0",
+    "@earendil-works/pi-coding-agent": "0.79.1",
+    "@earendil-works/pi-tui": "0.79.1",
+    "@types/node": "^25.9.3",
     "husky": "^9.1.7",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.8"
   },
   "pnpm": {
     "overrides": {
@@ -67,6 +72,9 @@
   },
   "peerDependenciesMeta": {
     "@earendil-works/pi-coding-agent": {
+      "optional": true
+    },
+    "@earendil-works/pi-tui": {
       "optional": true
     }
   }

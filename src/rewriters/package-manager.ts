@@ -60,7 +60,7 @@ export function createPackageManagerRewriter(
       // Get the literal part for position info. Only rewrite if the
       // first part is a simple Literal (no expansions in command name).
       const firstPart = firstWord.parts[0];
-      if (!firstPart || firstPart.type !== "Literal") return;
+      if (firstPart?.type !== "Literal") return;
 
       const literalValue = firstPart.value;
       // The word's position in the source is derived from the literal value.
