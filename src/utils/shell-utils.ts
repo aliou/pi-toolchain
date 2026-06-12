@@ -6,6 +6,7 @@
  */
 
 import type {
+  ArithExpr,
   Assignment,
   Command,
   Program,
@@ -33,16 +34,42 @@ function partToString(part: WordPart): string {
       return part.value;
     case "DblQuoted":
       return part.parts.map(partToString).join("");
-    case "ParamExp":
-      return part.short
-        ? `$${part.param.value}`
-        : `\${${part.param.value}${part.op ?? ""}${part.value ? wordToString(part.value) : ""}}`;
+    case "ParamExp": {
+      if (part.short) return `$${part.param.value}`;
+      let inner = part.param.value;
+      if (part.exp) {
+        inner += part.exp.op;
+        if (part.exp.word) inner += wordToString(part.exp.word);
+      }
+      return `\${${inner}}`;
+    }
     case "CmdSubst":
       return "$(...)";
     case "ArithExp":
-      return `$((${part.expr}))`;
+      return `$((${arithExprToString(part.x)}))`;
     case "ProcSubst":
       return `${part.op}(...)`;
+    case "BraceExp":
+      return `{${part.elems.map(wordToString).join(",")}}`;
+    case "ExtGlob":
+      return `${part.op}${part.pattern})`;
+  }
+}
+
+function arithExprToString(expr: ArithExpr): string {
+  switch (expr.type) {
+    case "ArithLit":
+      return expr.value;
+    case "ParamExp":
+      return expr.short ? `$${expr.param.value}` : `\${${expr.param.value}}`;
+    case "BinaryArithm":
+      return `${arithExprToString(expr.x)}${expr.op}${arithExprToString(expr.y)}`;
+    case "UnaryArithm":
+      return expr.post
+        ? `${arithExprToString(expr.x)}${expr.op}`
+        : `${expr.op}${arithExprToString(expr.x)}`;
+    case "ParenArithm":
+      return `(${arithExprToString(expr.x)})`;
   }
 }
 

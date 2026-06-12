@@ -50,7 +50,7 @@ export function createPythonRewriter(): Rewriter {
       if (!isPython && !isPip) return;
 
       const firstPart = firstWord.parts[0];
-      if (!firstPart || firstPart.type !== "Literal") return;
+      if (firstPart?.type !== "Literal") return;
 
       const literalValue = firstPart.value;
       const searchFrom =
