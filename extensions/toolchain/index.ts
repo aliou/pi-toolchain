@@ -1,9 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { configLoader } from "../../src/config";
-import { registerBashIntegration } from "./hooks/bash-integration";
 import { registerSessionStartWarnings } from "./hooks/session-start";
 import {
-  hasMutationFeatures,
   hasToolCallFeatures,
   registerToolCallHandler,
 } from "./hooks/tool-call";
@@ -35,6 +33,5 @@ export default async function (pi: ExtensionAPI) {
     registerToolCallHandler(pi, config);
   }
 
-  if (!hasMutationFeatures(config)) return;
-  registerBashIntegration(pi, config);
+  // Phase 5: register command mutation via tool_call when hasMutationFeatures(config)
 }

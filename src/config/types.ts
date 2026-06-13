@@ -11,7 +11,6 @@
  */
 
 export type FeatureMode = "disabled" | "mutate" | "block";
-export type BashSourceMode = "override-bash" | "composed-bash";
 
 export interface ToolchainConfig {
   version?: string;
@@ -23,9 +22,6 @@ export interface ToolchainConfig {
   };
   packageManager?: {
     selected?: "bun" | "pnpm" | "npm";
-  };
-  bash?: {
-    sourceMode?: BashSourceMode;
   };
   ui?: {
     showMutationNotifications?: boolean;
@@ -41,9 +37,6 @@ export interface ResolvedToolchainConfig {
   };
   packageManager: {
     selected: "bun" | "pnpm" | "npm";
-  };
-  bash: {
-    sourceMode: BashSourceMode;
   };
   ui: {
     showMutationNotifications: boolean;

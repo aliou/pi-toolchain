@@ -1,14 +1,9 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it } from "vitest";
-import { registerBashIntegration } from "../extensions/toolchain/hooks/bash-integration";
 import {
   hasMutationFeatures,
   registerToolCallHandler,
 } from "../extensions/toolchain/hooks/tool-call";
-import {
-  BASH_SPAWN_HOOK_REQUEST_EVENT,
-  TOOLCHAIN_SPAWN_HOOK_CONTRIBUTOR_ID,
-} from "../extensions/toolchain/utils/bash-composition";
 import {
   DEFAULT_CONFIG,
   type ResolvedToolchainConfig,
@@ -17,8 +12,8 @@ import {
 } from "./config";
 import {
   CURRENT_VERSION,
-  isMissingBashSourceMode,
-  migrateMissingBashSourceMode,
+  hasStaleBashConfig,
+  migrateRemoveBashConfig,
   migrateRenameKeys,
   migrateV0,
   needsKeyRename,
@@ -27,8 +22,6 @@ import { analyzeRewrite } from "./rules";
 
 function createPiStub() {
   const toolCallHandlers: Array<Parameters<ExtensionAPI["on"]>[1]> = [];
-  const eventHandlers = new Map<string, (data: unknown) => void>();
-  const registeredTools: unknown[] = [];
 
   const pi = {
     on(eventName: string, handler: Parameters<ExtensionAPI["on"]>[1]) {
@@ -36,17 +29,9 @@ function createPiStub() {
         toolCallHandlers.push(handler);
       }
     },
-    registerTool(tool: unknown) {
-      registeredTools.push(tool);
-    },
-    events: {
-      on(eventName: string, handler: (data: unknown) => void) {
-        eventHandlers.set(eventName, handler);
-      },
-    },
   } as unknown as ExtensionAPI;
 
-  return { pi, toolCallHandlers, eventHandlers, registeredTools };
+  return { pi, toolCallHandlers };
 }
 
 function withConfig(partial: ToolchainConfig): ResolvedToolchainConfig {
@@ -67,27 +52,12 @@ describe("toolchain config defaults", () => {
     expect(resolved.features.python).toBe("disabled");
   });
 
-  it("defaults bash.sourceMode to override-bash", () => {
-    const resolved = resolveToolchainConfig({});
-    expect(resolved.bash.sourceMode).toBe("override-bash");
-  });
-
   it("DEFAULT_CONFIG has mutation surface", () => {
     expect(DEFAULT_CONFIG.features.packageManager).toBe("disabled");
     expect(DEFAULT_CONFIG.features.python).toBe("disabled");
     expect(DEFAULT_CONFIG.features.gitRebaseEditor).toBe("mutate");
     expect(DEFAULT_CONFIG.ui.showMutationNotifications).toBe(false);
-    expect(DEFAULT_CONFIG.bash.sourceMode).toBe("override-bash");
-  });
-
-  it("rejects invalid bash.sourceMode", () => {
-    expect(() =>
-      resolveToolchainConfig({
-        bash: {
-          sourceMode: "wrong-mode" as "override-bash",
-        },
-      }),
-    ).toThrow(/bash\.sourceMode must be "override-bash" or "composed-bash"/);
+    expect("bash" in DEFAULT_CONFIG).toBe(false);
   });
 
   it("rejects gitRebaseEditor block mode", () => {
@@ -250,24 +220,8 @@ describe("toolchain migration", () => {
     ).toBe(false);
   });
 
-  it("isMissingBashSourceMode detects missing sourceMode", () => {
-    expect(isMissingBashSourceMode({ version: CURRENT_VERSION })).toBe(true);
-  });
-
-  it("does not run missing-source-mode migration when sourceMode already exists", () => {
-    const config = {
-      version: "0.5.1-old",
-      bash: { sourceMode: "composed-bash" },
-    } satisfies ToolchainConfig;
-
-    expect(isMissingBashSourceMode(config)).toBe(false);
-    expect(resolveToolchainConfig(config).bash.sourceMode).toBe(
-      "composed-bash",
-    );
-  });
-
   it("resolves v0 config through migration chain", () => {
-    // Simulate the migration chain: v0 -> add-bash-source-mode -> rename-keys
+    // Simulate the migration chain: v0 -> rename-keys
     let config: ToolchainConfig = {
       enabled: true,
       features: {
@@ -281,11 +235,7 @@ describe("toolchain migration", () => {
       (config.features as Record<string, unknown>).enforcePackageManager,
     ).toBe("mutate");
 
-    // Step 2: add-bash-source-mode
-    config = migrateMissingBashSourceMode(config);
-    expect(config.bash?.sourceMode).toBe("override-bash");
-
-    // Step 3: rename keys
+    // Step 2: rename keys
     expect(needsKeyRename(config)).toBe(true);
     config = migrateRenameKeys(config);
     expect(config.features?.packageManager).toBe("mutate");
@@ -296,6 +246,39 @@ describe("toolchain migration", () => {
     // Final: resolve defaults
     const resolved = resolveToolchainConfig(config);
     expect(resolved.features.packageManager).toBe("mutate");
+  });
+
+  it("hasStaleBashConfig detects stale bash key", () => {
+    expect(
+      hasStaleBashConfig({
+        version: CURRENT_VERSION,
+        bash: { sourceMode: "override-bash" },
+      } as unknown as ToolchainConfig),
+    ).toBe(true);
+  });
+
+  it("hasStaleBashConfig returns false for current schema", () => {
+    expect(hasStaleBashConfig({ version: CURRENT_VERSION })).toBe(false);
+  });
+
+  it("migrateRemoveBashConfig strips stale bash key", () => {
+    const migrated = migrateRemoveBashConfig({
+      version: "0.6.0-20260612",
+      bash: { sourceMode: "composed-bash" },
+    } as unknown as ToolchainConfig);
+
+    expect((migrated as Record<string, unknown>).bash).toBeUndefined();
+    expect(migrated.version).toBe(CURRENT_VERSION);
+  });
+
+  it("resolveToolchainConfig strips stale bash key from old configs", () => {
+    const resolved = resolveToolchainConfig({
+      bash: { sourceMode: "override-bash" },
+    } as unknown as ToolchainConfig);
+
+    expect(
+      (resolved as unknown as Record<string, unknown>).bash,
+    ).toBeUndefined();
   });
 });
 
@@ -322,58 +305,17 @@ describe("feature predicates", () => {
   });
 });
 
-// --- Bash integration (Phase 3: still working, Phase 4 removes) ---
+// --- Mutation notifications ---
 
-describe("toolchain bash source mode", () => {
-  it("registers local bash in override-bash mode", () => {
-    const { pi, eventHandlers, registeredTools } = createPiStub();
-    const config = withConfig({
-      features: { packageManager: "mutate" },
-      bash: { sourceMode: "override-bash" },
-    });
-
-    registerBashIntegration(pi, config);
-
-    expect(registeredTools).toHaveLength(1);
-    expect(eventHandlers.has(BASH_SPAWN_HOOK_REQUEST_EVENT)).toBe(false);
-  });
-
-  it("contributes to composer in composed-bash mode", () => {
-    const { pi, eventHandlers, registeredTools } = createPiStub();
-    const config = withConfig({
-      features: { packageManager: "mutate" },
-      bash: { sourceMode: "composed-bash" },
-    });
-
-    registerBashIntegration(pi, config);
-
-    expect(registeredTools).toHaveLength(0);
-    const handler = eventHandlers.get(BASH_SPAWN_HOOK_REQUEST_EVENT);
-    expect(handler).toBeTypeOf("function");
-
-    const contributions: Array<{ id: string; spawnHook: unknown }> = [];
-    handler?.({
-      register(contributor: { id: string; spawnHook: unknown }) {
-        contributions.push(contributor);
-      },
-    });
-
-    expect(contributions).toHaveLength(1);
-    expect(contributions[0]?.id).toBe(TOOLCHAIN_SPAWN_HOOK_CONTRIBUTOR_ID);
-    expect(contributions[0]?.spawnHook).toBeTypeOf("function");
-  });
-
-  it("mutation notifications include source-mode prefix", async () => {
+describe("toolchain mutation notifications", () => {
+  it("emits mutation notifications without bash source prefix", async () => {
     const { pi, toolCallHandlers } = createPiStub();
     const config = withConfig({
       features: { gitRebaseEditor: "mutate" },
-      bash: { sourceMode: "composed-bash" },
       ui: { showMutationNotifications: true },
     });
 
     registerToolCallHandler(pi, config);
-
-    expect(toolCallHandlers).toHaveLength(1);
 
     const messages: string[] = [];
     await toolCallHandlers[0](
@@ -391,7 +333,10 @@ describe("toolchain bash source mode", () => {
     );
 
     expect(messages).toHaveLength(1);
-    expect(messages[0] ?? "").toMatch(/^\[composed-bash\] /);
+    expect(messages[0] ?? "").not.toMatch(
+      /^\[(override-bash|composed-bash)\] /,
+    );
+    expect(messages[0]).toContain("GIT_EDITOR");
   });
 });
 

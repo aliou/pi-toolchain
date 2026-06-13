@@ -1,6 +1,5 @@
 import type { SettingsSection } from "@aliou/pi-utils-settings";
 import type {
-  BashSourceMode,
   FeatureMode,
   ResolvedToolchainConfig,
   ToolchainConfig,
@@ -32,7 +31,6 @@ const FEATURE_UI: Record<
 };
 
 const PACKAGE_MANAGERS = ["pnpm", "bun", "npm"] as const;
-const BASH_SOURCE_MODES: BashSourceMode[] = ["override-bash", "composed-bash"];
 
 export function buildToolchainSettingsSections(
   tabConfig: ToolchainConfig | null,
@@ -63,19 +61,6 @@ export function buildToolchainSettingsSections(
             tabConfig?.packageManager?.selected ??
             resolved.packageManager.selected,
           values: [...PACKAGE_MANAGERS],
-        },
-      ],
-    },
-    {
-      label: "Bash Integration",
-      items: [
-        {
-          id: "bash.sourceMode",
-          label: "Source mode",
-          description:
-            "override-bash: toolchain registers bash when mutate is active. composed-bash: toolchain contributes mutation hook to external bash composer.",
-          currentValue: tabConfig?.bash?.sourceMode ?? resolved.bash.sourceMode,
-          values: [...BASH_SOURCE_MODES],
         },
       ],
     },

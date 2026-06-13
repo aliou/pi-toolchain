@@ -13,18 +13,20 @@
  *    - features.preventBrew: removed (warn to use pi-guardrails)
  *    - features.preventDockerSecrets: removed (warn to use pi-guardrails)
  *
- * 2. add-bash-source-mode:
- *    - Adds bash.sourceMode: "override-bash" if missing
- *
- * 3. rename-keys-and-mutate-mode:
+ * 2. rename-keys-and-mutate-mode:
  *    - features.enforcePackageManager -> features.packageManager
  *    - features.rewritePython         -> features.python
  *    - FeatureMode "rewrite"          -> "mutate"
  *    - ui.showRewriteNotifications    -> ui.showMutationNotifications
  *
+ * 3. remove-bash-config:
+ *    - Strips stale bash.sourceMode from user configs
+ *    - Bash integration removed; tool_call is now the only runtime hook
+ *
  * Note: migrations run in sequence. v0-to-current produces old key names
  * with "mutate" mode; rename-keys-and-mutate-mode then fixes the keys.
- * Both stamp CURRENT_VERSION — this is intentional since each migration
+ * remove-bash-config cleans up the removed bash config surface.
+ * All stamp CURRENT_VERSION — this is intentional since each migration
  * gates on its own shouldRun condition and is idempotent.
  */
 
@@ -34,7 +36,7 @@ import type { FeatureMode, ToolchainConfig } from "./types";
  * Config schema version. Bump only when a migration is added.
  * Keep independent from package.json version.
  */
-export const CURRENT_VERSION = "0.6.0-20260612";
+export const CURRENT_VERSION = "0.7.0-20260612";
 
 /** Warnings queued during migration, flushed at session_start. */
 export const pendingWarnings: string[] = [];
@@ -79,6 +81,8 @@ export function migrateV0(config: ToolchainConfig): ToolchainConfig {
     }
   }
 
+  migrated.version = CURRENT_VERSION;
+
   pendingWarnings.push(
     "[toolchain] Updated: feature options now support three modes: " +
       '"disabled", "mutate" (transparent command mutation), or "block" ' +
@@ -93,30 +97,10 @@ export function migrateV0(config: ToolchainConfig): ToolchainConfig {
           "(/guardrails:settings > Examples > Dangerous command presets)."),
   );
 
-  migrated.version = CURRENT_VERSION;
   return migrated as ToolchainConfig;
 }
 
-// --- 2. add-bash-source-mode ---
-
-export function isMissingBashSourceMode(config: ToolchainConfig): boolean {
-  return config.bash?.sourceMode === undefined;
-}
-
-export function migrateMissingBashSourceMode(
-  config: ToolchainConfig,
-): ToolchainConfig {
-  return {
-    ...config,
-    bash: {
-      ...config.bash,
-      sourceMode: "override-bash",
-    },
-    version: CURRENT_VERSION,
-  };
-}
-
-// --- 3. rename keys + "rewrite" -> "mutate" ---
+// --- 2. rename keys + "rewrite" -> "mutate" ---
 
 /** Maps legacy "rewrite" mode to "mutate". Passes all other values through
  *  (including invalid ones) so validation can reject them. */
@@ -205,4 +189,28 @@ export function needsKeyRename(config: ToolchainConfig): boolean {
   }
 
   return false;
+}
+
+// --- 3. remove-bash-config ---
+
+/** Detects stale bash key in user config. */
+export function hasStaleBashConfig(config: ToolchainConfig): boolean {
+  return "bash" in (config as Record<string, unknown>);
+}
+
+/** Strips stale bash key from user config. */
+export function migrateRemoveBashConfig(
+  config: ToolchainConfig,
+): ToolchainConfig {
+  const next = structuredClone(config) as Record<string, unknown>;
+  delete next.bash;
+  next.version = CURRENT_VERSION;
+
+  pendingWarnings.push(
+    "[toolchain] Removed stale bash.sourceMode config — " +
+      "bash integration has been removed. " +
+      "Use /toolchain:settings to configure.",
+  );
+
+  return next as ToolchainConfig;
 }

@@ -11,7 +11,6 @@ import type { ResolvedToolchainConfig } from "../../../src/config";
 import { analyzeRewrite } from "../../../src/rules";
 import { detectForeignPackageManager } from "../../../src/rules/package-manager";
 import { detectPythonCommand } from "../../../src/rules/python";
-import { formatMutationSourcePrefix } from "../utils/bash-composition";
 
 // --- Blocker detection ---
 
@@ -92,8 +91,9 @@ export function registerToolCallHandler(
 
     // Mutation notifications
     if (config.ui.showMutationNotifications) {
-      // NOTE: process.env is used here while the spawn hook path uses ctx.env.
+      // NOTE: process.env is used here while the spawn hook path used ctx.env.
       // They can diverge if Pi augments ctx.env for a given execution.
+      // Phase 5 will unify this by mutating event.input.command directly.
       const rewriteResult = analyzeRewrite(
         {
           command,
@@ -102,9 +102,8 @@ export function registerToolCallHandler(
         config,
       );
 
-      const prefix = formatMutationSourcePrefix(config.bash.sourceMode);
       for (const notice of rewriteResult.notices) {
-        ctx.ui.notify(`${prefix} ${notice.message}`, "warning");
+        ctx.ui.notify(notice.message, "warning");
       }
     }
 
@@ -120,6 +119,7 @@ export function hasToolCallFeatures(config: ResolvedToolchainConfig): boolean {
   );
 }
 
+// Phase 5: used to gate event.input.command mutation in tool_call handler
 export function hasMutationFeatures(config: ResolvedToolchainConfig): boolean {
   return (
     config.features.packageManager === "mutate" ||
