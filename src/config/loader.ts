@@ -1,9 +1,9 @@
 import { ConfigLoader, type Migration } from "@aliou/pi-utils-settings";
 import { DEFAULT_CONFIG } from "./defaults";
 import {
-  isMissingBashSourceMode,
+  hasStaleBashConfig,
   isV0,
-  migrateMissingBashSourceMode,
+  migrateRemoveBashConfig,
   migrateRenameKeys,
   migrateV0,
   needsKeyRename,
@@ -17,22 +17,18 @@ const migrations: Migration<ToolchainConfig>[] = [
     run: (config) => migrateV0(config),
   },
   {
-    name: "add-bash-source-mode",
-    shouldRun: (config) => isMissingBashSourceMode(config),
-    run: (config) => migrateMissingBashSourceMode(config),
-  },
-  {
     name: "rename-keys-and-mutate-mode",
     shouldRun: (config) => needsKeyRename(config),
     run: (config) => migrateRenameKeys(config),
   },
+  {
+    name: "remove-bash-config",
+    shouldRun: (config) => hasStaleBashConfig(config),
+    run: (config) => migrateRemoveBashConfig(config),
+  },
 ];
 
 const VALID_FEATURE_MODES = new Set<string>(["disabled", "mutate", "block"]);
-
-function isValidBashSourceMode(value: unknown): value is string {
-  return value === "override-bash" || value === "composed-bash";
-}
 
 function deepMerge(target: object, source: object): void {
   const t = target as Record<string, unknown>;
@@ -61,7 +57,7 @@ function assertFeatureMode(name: string, value: string): void {
   }
 }
 
-function validateResolvedConfig(
+function sanitizeAndValidate(
   config: ResolvedToolchainConfig,
 ): ResolvedToolchainConfig {
   assertFeatureMode("packageManager", config.features.packageManager);
@@ -74,11 +70,8 @@ function validateResolvedConfig(
     );
   }
 
-  if (!isValidBashSourceMode(config.bash.sourceMode)) {
-    throw new Error(
-      '[toolchain] Invalid config: bash.sourceMode must be "override-bash" or "composed-bash"',
-    );
-  }
+  // Strip stale bash key from old configs so it doesn't leak into resolved config
+  delete (config as unknown as Record<string, unknown>).bash;
 
   return config;
 }
@@ -90,7 +83,7 @@ export function resolveToolchainConfig(
   if (config) {
     deepMerge(resolved, config);
   }
-  return validateResolvedConfig(resolved);
+  return sanitizeAndValidate(resolved);
 }
 
 export const configLoader = new ConfigLoader<
@@ -99,5 +92,5 @@ export const configLoader = new ConfigLoader<
 >("toolchain", DEFAULT_CONFIG, {
   scopes: ["global", "local", "memory"],
   migrations,
-  afterMerge: (resolved) => validateResolvedConfig(resolved),
+  afterMerge: (resolved) => sanitizeAndValidate(resolved),
 });

@@ -10,9 +10,6 @@ export const DEFAULT_CONFIG: ResolvedToolchainConfig = {
   packageManager: {
     selected: "pnpm",
   },
-  bash: {
-    sourceMode: "override-bash",
-  },
   ui: {
     showMutationNotifications: false,
   },
