@@ -10,7 +10,10 @@
  *    from the rewrite analysis are emitted as Pi warnings.
  */
 
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import {
+  type ExtensionAPI,
+  isToolCallEventType,
+} from "@earendil-works/pi-coding-agent";
 import type { ResolvedToolchainConfig } from "../../../src/config";
 import { analyzeRewrite } from "../../../src/rules";
 import { detectForeignPackageManager } from "../../../src/rules/node-package-manager";
@@ -100,7 +103,7 @@ export function registerToolCallHandler(
   config: ResolvedToolchainConfig,
 ): void {
   pi.on("tool_call", async (event, ctx) => {
-    if (event.toolName !== "bash") return;
+    if (!isToolCallEventType("bash", event)) return;
 
     const command = String(event.input.command ?? "");
     if (!command) return;
@@ -135,6 +138,7 @@ export function registerToolCallHandler(
       }
 
       // Emit mutation notifications
+      // TODO: Emit events on the event bus too
       if (config.ui.showMutationNotifications) {
         for (const notice of rewriteResult.notices) {
           ctx.ui.notify(notice.message, "warning");
