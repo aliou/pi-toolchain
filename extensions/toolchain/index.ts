@@ -17,6 +17,11 @@ import { registerToolchainSettings } from "./settings";
  * - "mutate": transparently mutate commands before shell execution
  * - "block": block commands via tool_call hook
  *
+ * All runtime behavior is handled through a single tool_call hook:
+ * - Blockers reject matching commands with a reason
+ * - Mutators rewrite event.input.command in place
+ * - Notifications inform the user of mutations
+ *
  * Configuration:
  * - Global: ~/.pi/agent/extensions/toolchain.json
  * - Project: .pi/extensions/toolchain.json
@@ -32,6 +37,4 @@ export default async function (pi: ExtensionAPI) {
   if (hasToolCallFeatures(config)) {
     registerToolCallHandler(pi, config);
   }
-
-  // Phase 5: register command mutation via tool_call when hasMutationFeatures(config)
 }
