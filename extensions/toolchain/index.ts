@@ -1,6 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { configLoader } from "../../src/config";
-import { registerSessionStartWarnings } from "./hooks/session-start";
 import {
   hasToolCallFeatures,
   registerToolCallHandler,
@@ -32,7 +31,18 @@ export default async function (pi: ExtensionAPI) {
   if (!config.enabled) return;
 
   registerToolchainSettings(pi);
-  registerSessionStartWarnings(pi);
+
+  pi.on("session_start", (_event, ctx) => {
+    const messages = configLoader.drainMessages();
+    if (messages.length === 0) return;
+
+    // Send a single notification rather than one per message. The header and
+    // "[toolchain]" prefix live here instead of in the migration message
+    // strings, so individual messages stay self-contained. Always uses the
+    // same bulleted layout, regardless of message count.
+    const body = messages.map((m) => `- ${m}`).join("\n");
+    ctx.ui.notify(`[toolchain] Your config was migrated:\n${body}`, "warning");
+  });
 
   if (hasToolCallFeatures(config)) {
     registerToolCallHandler(pi, config);

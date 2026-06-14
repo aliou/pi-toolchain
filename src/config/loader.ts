@@ -7,6 +7,7 @@ import {
   migrateRenameKeys,
   migrateV0,
   needsKeyRename,
+  v0Message,
 } from "./migration";
 import type { ResolvedToolchainConfig, ToolchainConfig } from "./types";
 
@@ -15,16 +16,25 @@ const migrations: Migration<ToolchainConfig>[] = [
     name: "v0-to-current",
     shouldRun: (config) => isV0(config),
     run: (config) => migrateV0(config),
+    message: (before) => v0Message(before),
   },
   {
     name: "rename-keys-and-mutate-mode",
     shouldRun: (config) => needsKeyRename(config),
     run: (config) => migrateRenameKeys(config),
+    message:
+      "Config updated: feature keys and mode names have been renamed " +
+      '("mutate" replaces "rewrite", keys simplified). ' +
+      "Use /toolchain:settings to configure.",
   },
   {
     name: "remove-bash-config",
     shouldRun: (config) => hasStaleBashConfig(config),
     run: (config) => migrateRemoveBashConfig(config),
+    message:
+      "Removed stale bash.sourceMode config — " +
+      "bash integration has been removed. " +
+      "Use /toolchain:settings to configure.",
   },
 ];
 
