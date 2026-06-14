@@ -6,9 +6,9 @@
  */
 
 import type { ResolvedToolchainConfig } from "../config";
-import { createGitRebaseRewriter } from "./git-rebase";
-import { createPackageManagerRewriter } from "./package-manager";
-import { createPythonRewriter } from "./python";
+import { createNodePackageManagerRewriter } from "./node-package-manager";
+import { createNonInteractiveGitRebaseRewriter } from "./non-interactive-git-rebase";
+import { createPythonToUvRewriter } from "./python-to-uv";
 import type {
   RewriteInput,
   RewriteNotice,
@@ -19,14 +19,14 @@ import type {
 function createRewriters(config: ResolvedToolchainConfig): Rewriter[] {
   const rewriters: Rewriter[] = [];
 
-  if (config.features.packageManager === "mutate") {
-    rewriters.push(createPackageManagerRewriter(config));
+  if (config.features.nodePackageManager === "mutate") {
+    rewriters.push(createNodePackageManagerRewriter(config));
   }
-  if (config.features.python === "mutate") {
-    rewriters.push(createPythonRewriter());
+  if (config.features.pythonToUv === "mutate") {
+    rewriters.push(createPythonToUvRewriter());
   }
-  if (config.features.gitRebaseEditor === "mutate") {
-    rewriters.push(createGitRebaseRewriter());
+  if (config.features.nonInteractiveGitRebase === "mutate") {
+    rewriters.push(createNonInteractiveGitRebaseRewriter());
   }
 
   return rewriters;

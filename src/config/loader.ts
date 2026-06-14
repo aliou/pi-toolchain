@@ -60,18 +60,26 @@ function assertFeatureMode(name: string, value: string): void {
 function sanitizeAndValidate(
   config: ResolvedToolchainConfig,
 ): ResolvedToolchainConfig {
-  assertFeatureMode("packageManager", config.features.packageManager);
-  assertFeatureMode("python", config.features.python);
-  assertFeatureMode("gitRebaseEditor", config.features.gitRebaseEditor);
+  assertFeatureMode("nodePackageManager", config.features.nodePackageManager);
+  assertFeatureMode("pythonToUv", config.features.pythonToUv);
+  assertFeatureMode(
+    "nonInteractiveGitRebase",
+    config.features.nonInteractiveGitRebase,
+  );
 
-  if (config.features.gitRebaseEditor === "block") {
+  if (config.features.nonInteractiveGitRebase === "block") {
     throw new Error(
-      '[toolchain] Invalid config: features.gitRebaseEditor must be "disabled" or "mutate" (block is not supported)',
+      '[toolchain] Invalid config: features.nonInteractiveGitRebase must be "disabled" or "mutate" (block is not supported)',
     );
   }
 
-  // Strip stale bash key from old configs so it doesn't leak into resolved config
+  // Strip stale keys from old configs so they don't leak into resolved config
   delete (config as unknown as Record<string, unknown>).bash;
+  delete (config.features as unknown as Record<string, unknown>).packageManager;
+  delete (config.features as unknown as Record<string, unknown>).python;
+  delete (config.features as unknown as Record<string, unknown>)
+    .gitRebaseEditor;
+  delete (config as unknown as Record<string, unknown>).packageManager;
 
   return config;
 }

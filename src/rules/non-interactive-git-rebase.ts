@@ -20,7 +20,7 @@ import { walkCommandsWithAssignments } from "../shell/ast";
 import { wordToString } from "../shell/word-to-string";
 import type { Rewriter } from "./types";
 
-export function createGitRebaseRewriter(): Rewriter {
+export function createNonInteractiveGitRebaseRewriter(): Rewriter {
   return (input) => {
     const { command } = input;
     let needsEditor = false;

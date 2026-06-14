@@ -13,8 +13,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { ResolvedToolchainConfig } from "../../../src/config";
 import { analyzeRewrite } from "../../../src/rules";
-import { detectForeignPackageManager } from "../../../src/rules/package-manager";
-import { detectPythonCommand } from "../../../src/rules/python";
+import { detectForeignPackageManager } from "../../../src/rules/node-package-manager";
+import { detectPythonCommand } from "../../../src/rules/python-to-uv";
 
 // --- Blocker detection ---
 
@@ -23,19 +23,19 @@ interface BlockResult {
   reason: string;
 }
 
-function checkPackageManagerBlocker(
+function checkNodePackageManagerBlocker(
   command: string,
   config: ResolvedToolchainConfig,
 ): BlockResult | null {
-  if (config.features.packageManager !== "block") return null;
+  if (config.features.nodePackageManager !== "block") return null;
 
   const detected = detectForeignPackageManager(
     command,
-    config.packageManager.selected,
+    config.nodePackageManager.selected,
   );
   if (!detected) return null;
 
-  const selected = config.packageManager.selected;
+  const selected = config.nodePackageManager.selected;
   return {
     notification: `Blocked ${detected} command. Use ${selected} instead.`,
     reason:
@@ -45,11 +45,11 @@ function checkPackageManagerBlocker(
   };
 }
 
-function checkPythonBlocker(
+function checkPythonToUvBlocker(
   command: string,
   config: ResolvedToolchainConfig,
 ): BlockResult | null {
-  if (config.features.python !== "block") return null;
+  if (config.features.pythonToUv !== "block") return null;
 
   const detected = detectPythonCommand(command);
   if (!detected) return null;
@@ -69,8 +69,8 @@ function checkBlockers(
   config: ResolvedToolchainConfig,
 ): BlockResult | null {
   return (
-    checkPackageManagerBlocker(command, config) ??
-    checkPythonBlocker(command, config)
+    checkNodePackageManagerBlocker(command, config) ??
+    checkPythonToUvBlocker(command, config)
   );
 }
 
@@ -78,8 +78,8 @@ function checkBlockers(
 
 export function hasToolCallFeatures(config: ResolvedToolchainConfig): boolean {
   return (
-    config.features.packageManager === "block" ||
-    config.features.python === "block" ||
+    config.features.nodePackageManager === "block" ||
+    config.features.pythonToUv === "block" ||
     hasMutationFeatures(config) ||
     config.ui.showMutationNotifications
   );
@@ -87,9 +87,9 @@ export function hasToolCallFeatures(config: ResolvedToolchainConfig): boolean {
 
 export function hasMutationFeatures(config: ResolvedToolchainConfig): boolean {
   return (
-    config.features.packageManager === "mutate" ||
-    config.features.python === "mutate" ||
-    config.features.gitRebaseEditor === "mutate"
+    config.features.nodePackageManager === "mutate" ||
+    config.features.pythonToUv === "mutate" ||
+    config.features.nonInteractiveGitRebase === "mutate"
   );
 }
 

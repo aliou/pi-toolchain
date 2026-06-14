@@ -65,7 +65,7 @@ interface Replacement {
   text: string;
 }
 
-export function createPythonRewriter(): Rewriter {
+export function createPythonToUvRewriter(): Rewriter {
   return (input) => {
     const { command } = input;
 
