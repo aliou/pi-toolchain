@@ -4,6 +4,13 @@
  * Uses a version field to gate migrations, following the same pattern as
  * pi-guardrails. Configs without a version field are considered v0 (legacy).
  *
+ * All migration functions are pure: they take a config and return a migrated
+ * config with no side effects. User-facing messages are declared in the
+ * migration objects in loader.ts via the `message` field, and are emitted
+ * by ConfigLoader.drainMessages(). The message strings do NOT carry a
+ * "[toolchain]" prefix — the extension's session_start handler adds it when
+ * building the single notification.
+ *
  * Migrations (in order):
  *
  * 1. v0-to-current:
@@ -42,9 +49,6 @@ import type { FeatureMode, ToolchainConfig } from "./types";
  */
 export const CURRENT_VERSION = "0.7.0-20260614";
 
-/** Warnings queued during migration, flushed at session_start. */
-export const pendingWarnings: string[] = [];
-
 // --- 1. v0: boolean -> FeatureMode ---
 
 const LEGACY_BOOLEAN_FEATURES = [
@@ -76,32 +80,39 @@ export function migrateV0(config: ToolchainConfig): ToolchainConfig {
     }
   }
 
-  // Strip removed features and warn.
-  const removedFound: string[] = [];
+  // Strip removed features.
   for (const key of REMOVED_FEATURES) {
-    if (key in migrated.features) {
-      delete migrated.features[key];
-      removedFound.push(key);
-    }
+    delete migrated.features[key];
   }
 
   migrated.version = CURRENT_VERSION;
 
-  pendingWarnings.push(
-    "[toolchain] Updated: feature options now support three modes: " +
-      '"disabled", "mutate" (transparent command mutation), or "block" ' +
-      "(block the command via tool_call). " +
-      "Use /toolchain:settings to configure. " +
-      (removedFound.length > 0
-        ? `The following features were removed and stripped from your config: ${removedFound.join(", ")}. ` +
-          "They are now available in @aliou/pi-guardrails " +
-          "(/guardrails:settings > Examples > Dangerous command presets)."
-        : "Note: preventBrew and preventDockerSecrets have been removed from pi-toolchain. " +
-          "They are now available in @aliou/pi-guardrails " +
-          "(/guardrails:settings > Examples > Dangerous command presets)."),
-  );
-
   return migrated as ToolchainConfig;
+}
+
+/** Build the migration message for v0. Receives the config before migration. */
+export function v0Message(before: ToolchainConfig): string {
+  const features = before.features as Record<string, unknown> | undefined;
+  const removedFound: string[] = [];
+  if (features) {
+    for (const key of REMOVED_FEATURES) {
+      if (key in features) removedFound.push(key);
+    }
+  }
+
+  return (
+    "Updated: feature options now support three modes: " +
+    '"disabled", "mutate" (transparent command mutation), or "block" ' +
+    "(block the command via tool_call). " +
+    "Use /toolchain:settings to configure. " +
+    (removedFound.length > 0
+      ? `The following features were removed and stripped from your config: ${removedFound.join(", ")}. ` +
+        "They are now available in @aliou/pi-guardrails " +
+        "(/guardrails:settings > Examples > Dangerous command presets)."
+      : "Note: preventBrew and preventDockerSecrets have been removed from pi-toolchain. " +
+        "They are now available in @aliou/pi-guardrails " +
+        "(/guardrails:settings > Examples > Dangerous command presets).")
+  );
 }
 
 // --- 2. rename keys + "rewrite" -> "mutate" ---
@@ -200,12 +211,6 @@ export function migrateRenameKeys(config: ToolchainConfig): ToolchainConfig {
 
   next.version = CURRENT_VERSION;
 
-  pendingWarnings.push(
-    "[toolchain] Config updated: feature keys and mode names have been renamed " +
-      '("mutate" replaces "rewrite", keys simplified). ' +
-      "Use /toolchain:settings to configure.",
-  );
-
   return next;
 }
 
@@ -258,12 +263,6 @@ export function migrateRemoveBashConfig(
   const next = structuredClone(config) as Record<string, unknown>;
   delete next.bash;
   next.version = CURRENT_VERSION;
-
-  pendingWarnings.push(
-    "[toolchain] Removed stale bash.sourceMode config — " +
-      "bash integration has been removed. " +
-      "Use /toolchain:settings to configure.",
-  );
 
   return next as ToolchainConfig;
 }

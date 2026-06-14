@@ -7,6 +7,7 @@ import {
   migrateRenameKeys,
   migrateV0,
   needsKeyRename,
+  v0Message,
 } from "./migration";
 
 describe("migration: v0 boolean -> FeatureMode", () => {
@@ -34,6 +35,42 @@ describe("migration: v0 boolean -> FeatureMode", () => {
     expect(
       (migrated.features as Record<string, unknown>).enforcePackageManager,
     ).toBe("disabled");
+  });
+
+  it("strips removed features (preventBrew, preventDockerSecrets)", () => {
+    const migrated = migrateV0({
+      enabled: true,
+      features: {
+        preventBrew: true,
+        preventDockerSecrets: true,
+      } as unknown as ToolchainConfig["features"],
+    });
+
+    expect(
+      (migrated.features as Record<string, unknown>).preventBrew,
+    ).toBeUndefined();
+    expect(
+      (migrated.features as Record<string, unknown>).preventDockerSecrets,
+    ).toBeUndefined();
+  });
+});
+
+describe("migration: v0Message", () => {
+  it("mentions removed features when present", () => {
+    const msg = v0Message({
+      features: {
+        preventBrew: true,
+      } as unknown as ToolchainConfig["features"],
+    });
+
+    expect(msg).toContain("preventBrew");
+    expect(msg).toContain("pi-guardrails");
+  });
+
+  it("mentions guardrails even without removed features", () => {
+    const msg = v0Message({ features: {} });
+
+    expect(msg).toContain("pi-guardrails");
   });
 });
 

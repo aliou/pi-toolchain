@@ -8,7 +8,7 @@ export {
   migrateRenameKeys,
   migrateV0,
   needsKeyRename,
-  pendingWarnings,
+  v0Message,
 } from "./migration";
 export type {
   FeatureMode,
