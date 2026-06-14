@@ -1,9 +1,13 @@
 /**
- * Combined tool_call handler for blockers and mutation notifications.
+ * Combined tool_call handler for blockers, command mutation, and notifications.
  *
- * Blockers run first. A blocked command never reaches the mutation
- * notification check. Only features with mode "block" or notifications
- * enabled register here.
+ * Execution order:
+ * 1. Blockers run first — a blocked command never reaches mutation.
+ * 2. Mutation — if any feature is in "mutate" mode, analyzeRewrite()
+ *    produces a rewritten command that is applied by mutating
+ *    event.input.command in place.
+ * 3. Notifications — if showMutationNotifications is enabled, notices
+ *    from the rewrite analysis are emitted as Pi warnings.
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -70,6 +74,25 @@ function checkBlockers(
   );
 }
 
+// --- Feature predicates ---
+
+export function hasToolCallFeatures(config: ResolvedToolchainConfig): boolean {
+  return (
+    config.features.packageManager === "block" ||
+    config.features.python === "block" ||
+    hasMutationFeatures(config) ||
+    config.ui.showMutationNotifications
+  );
+}
+
+export function hasMutationFeatures(config: ResolvedToolchainConfig): boolean {
+  return (
+    config.features.packageManager === "mutate" ||
+    config.features.python === "mutate" ||
+    config.features.gitRebaseEditor === "mutate"
+  );
+}
+
 // --- Extension hook ---
 
 export function registerToolCallHandler(
@@ -82,18 +105,22 @@ export function registerToolCallHandler(
     const command = String(event.input.command ?? "");
     if (!command) return;
 
-    // Blockers first
+    // 1. Blockers first
     const blocked = checkBlockers(command, config);
     if (blocked) {
       ctx.ui.notify(blocked.notification, "warning");
       return { block: true, reason: blocked.reason };
     }
 
-    // Mutation notifications
-    if (config.ui.showMutationNotifications) {
-      // NOTE: process.env is used here while the spawn hook path used ctx.env.
-      // They can diverge if Pi augments ctx.env for a given execution.
-      // Phase 5 will unify this by mutating event.input.command directly.
+    // 2. Command mutation + notifications
+    const needsRewrite =
+      hasMutationFeatures(config) || config.ui.showMutationNotifications;
+
+    if (needsRewrite) {
+      // TODO: process.env may diverge from Pi's ctx.env if the session
+      // augments environment variables for a given execution. Using
+      // ctx.env would be more accurate but isn't currently exposed
+      // in the tool_call handler context type.
       const rewriteResult = analyzeRewrite(
         {
           command,
@@ -102,28 +129,19 @@ export function registerToolCallHandler(
         config,
       );
 
-      for (const notice of rewriteResult.notices) {
-        ctx.ui.notify(notice.message, "warning");
+      // Mutate event.input.command in place — flows through to bash execution
+      if (rewriteResult.command !== command) {
+        event.input.command = rewriteResult.command;
+      }
+
+      // Emit mutation notifications
+      if (config.ui.showMutationNotifications) {
+        for (const notice of rewriteResult.notices) {
+          ctx.ui.notify(notice.message, "warning");
+        }
       }
     }
 
     return undefined;
   });
-}
-
-export function hasToolCallFeatures(config: ResolvedToolchainConfig): boolean {
-  return (
-    config.features.packageManager === "block" ||
-    config.features.python === "block" ||
-    config.ui.showMutationNotifications
-  );
-}
-
-// Phase 5: used to gate event.input.command mutation in tool_call handler
-export function hasMutationFeatures(config: ResolvedToolchainConfig): boolean {
-  return (
-    config.features.packageManager === "mutate" ||
-    config.features.python === "mutate" ||
-    config.features.gitRebaseEditor === "mutate"
-  );
 }

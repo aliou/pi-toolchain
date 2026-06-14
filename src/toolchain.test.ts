@@ -2,6 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it } from "vitest";
 import {
   hasMutationFeatures,
+  hasToolCallFeatures,
   registerToolCallHandler,
 } from "../extensions/toolchain/hooks/tool-call";
 import {
@@ -303,11 +304,181 @@ describe("feature predicates", () => {
 
     expect(hasMutationFeatures(config)).toBe(false);
   });
+
+  it("hasToolCallFeatures is true when mutation features are enabled", () => {
+    const config = withConfig({
+      features: { gitRebaseEditor: "mutate" },
+      ui: { showMutationNotifications: false },
+    });
+
+    expect(hasToolCallFeatures(config)).toBe(true);
+  });
+
+  it("hasToolCallFeatures is true when block features are enabled", () => {
+    const config = withConfig({
+      features: { packageManager: "block" },
+    });
+
+    expect(hasToolCallFeatures(config)).toBe(true);
+  });
+
+  it("hasToolCallFeatures is true when notifications are enabled", () => {
+    const config = withConfig({
+      features: { packageManager: "disabled" },
+      ui: { showMutationNotifications: true },
+    });
+
+    expect(hasToolCallFeatures(config)).toBe(true);
+  });
+
+  it("hasToolCallFeatures is false when nothing is active", () => {
+    const config = withConfig({
+      features: {
+        packageManager: "disabled",
+        python: "disabled",
+        gitRebaseEditor: "disabled",
+      },
+      ui: { showMutationNotifications: false },
+    });
+
+    expect(hasToolCallFeatures(config)).toBe(false);
+  });
 });
 
-// --- Mutation notifications ---
+// --- tool_call hook ---
 
-describe("toolchain mutation notifications", () => {
+describe("tool_call hook", () => {
+  it("mutates event.input.command in place for mutate features", async () => {
+    const { pi, toolCallHandlers } = createPiStub();
+    const config = withConfig({
+      features: { gitRebaseEditor: "mutate" },
+      ui: { showMutationNotifications: false },
+    });
+
+    registerToolCallHandler(pi, config);
+
+    const event = {
+      toolName: "bash",
+      input: { command: "git rebase -i HEAD~1" },
+    };
+
+    const result = await toolCallHandlers[0](
+      event as never,
+      {
+        ui: { notify() {} },
+      } as never,
+    );
+
+    expect(result).toBeUndefined();
+    expect(event.input.command).toBe(
+      "export GIT_EDITOR=true GIT_SEQUENCE_EDITOR=:; git rebase -i HEAD~1",
+    );
+  });
+
+  it("mutates package manager commands", async () => {
+    const { pi, toolCallHandlers } = createPiStub();
+    const config = withConfig({
+      features: { packageManager: "mutate" },
+      packageManager: { selected: "pnpm" },
+      ui: { showMutationNotifications: false },
+    });
+
+    registerToolCallHandler(pi, config);
+
+    const event = {
+      toolName: "bash",
+      input: { command: "npm install" },
+    };
+
+    await toolCallHandlers[0](
+      event as never,
+      {
+        ui: { notify() {} },
+      } as never,
+    );
+
+    expect(event.input.command).toBe("pnpm install");
+  });
+
+  it("mutates python commands", async () => {
+    const { pi, toolCallHandlers } = createPiStub();
+    const config = withConfig({
+      features: { python: "mutate" },
+      ui: { showMutationNotifications: false },
+    });
+
+    registerToolCallHandler(pi, config);
+
+    const event = {
+      toolName: "bash",
+      input: { command: "python script.py" },
+    };
+
+    await toolCallHandlers[0](
+      event as never,
+      {
+        ui: { notify() {} },
+      } as never,
+    );
+
+    expect(event.input.command).toBe("uv run python script.py");
+  });
+
+  it("does not mutate when no mutate features are enabled", async () => {
+    const { pi, toolCallHandlers } = createPiStub();
+    const config = withConfig({
+      features: {
+        packageManager: "disabled",
+        python: "disabled",
+        gitRebaseEditor: "disabled",
+      },
+      ui: { showMutationNotifications: false },
+    });
+
+    registerToolCallHandler(pi, config);
+
+    const event = {
+      toolName: "bash",
+      input: { command: "npm install" },
+    };
+
+    await toolCallHandlers[0](
+      event as never,
+      {
+        ui: { notify() {} },
+      } as never,
+    );
+
+    expect(event.input.command).toBe("npm install");
+    // Note: in production, the handler wouldn't be registered for this config
+    // since hasToolCallFeatures returns false. This tests the internal guard.
+  });
+
+  it("blocks commands instead of mutating when mode is block", async () => {
+    const { pi, toolCallHandlers } = createPiStub();
+    const config = withConfig({
+      features: { packageManager: "block" },
+      packageManager: { selected: "pnpm" },
+    });
+
+    registerToolCallHandler(pi, config);
+
+    const event = {
+      toolName: "bash",
+      input: { command: "npm install" },
+    };
+
+    const result = await toolCallHandlers[0](
+      event as never,
+      {
+        ui: { notify() {} },
+      } as never,
+    );
+
+    expect(result).toEqual({ block: true, reason: expect.any(String) });
+    expect(event.input.command).toBe("npm install"); // not mutated
+  });
+
   it("emits mutation notifications without bash source prefix", async () => {
     const { pi, toolCallHandlers } = createPiStub();
     const config = withConfig({
@@ -317,12 +488,14 @@ describe("toolchain mutation notifications", () => {
 
     registerToolCallHandler(pi, config);
 
+    const event = {
+      toolName: "bash",
+      input: { command: "git rebase -i HEAD~1" },
+    };
     const messages: string[] = [];
+
     await toolCallHandlers[0](
-      {
-        toolName: "bash",
-        input: { command: "git rebase -i HEAD~1" },
-      } as never,
+      event as never,
       {
         ui: {
           notify(message: string) {
@@ -337,6 +510,66 @@ describe("toolchain mutation notifications", () => {
       /^\[(override-bash|composed-bash)\] /,
     );
     expect(messages[0]).toContain("GIT_EDITOR");
+    expect(event.input.command).toContain("GIT_EDITOR=true");
+  });
+
+  it("ignores non-bash tool calls", async () => {
+    const { pi, toolCallHandlers } = createPiStub();
+    const config = withConfig({
+      features: { packageManager: "mutate" },
+      packageManager: { selected: "pnpm" },
+    });
+
+    registerToolCallHandler(pi, config);
+
+    const event = {
+      toolName: "read",
+      input: { command: "npm install" },
+    };
+
+    const result = await toolCallHandlers[0](
+      event as never,
+      {
+        ui: { notify() {} },
+      } as never,
+    );
+
+    expect(result).toBeUndefined();
+    expect(event.input.command).toBe("npm install"); // untouched
+  });
+
+  it("does not mutate or notify when showMutationNotifications is on but all features disabled", async () => {
+    const { pi, toolCallHandlers } = createPiStub();
+    const config = withConfig({
+      features: {
+        packageManager: "disabled",
+        python: "disabled",
+        gitRebaseEditor: "disabled",
+      },
+      ui: { showMutationNotifications: true },
+    });
+
+    registerToolCallHandler(pi, config);
+
+    const event = {
+      toolName: "bash",
+      input: { command: "npm install" },
+    };
+    const messages: string[] = [];
+
+    await toolCallHandlers[0](
+      event as never,
+      {
+        ui: {
+          notify(message: string) {
+            messages.push(message);
+          },
+        },
+      } as never,
+    );
+
+    expect(messages).toHaveLength(0);
+    expect(event.input.command).toBe("npm install");
   });
 });
 
