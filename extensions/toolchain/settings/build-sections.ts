@@ -11,19 +11,19 @@ const FEATURE_UI: Record<
   FeatureKey,
   { label: string; description: string; modes: FeatureMode[] }
 > = {
-  packageManager: {
-    label: "Package manager enforcement",
+  nodePackageManager: {
+    label: "Node package manager",
     description:
       "Mutate or block npm/yarn/bun commands to use the selected package manager",
     modes: ["disabled", "mutate", "block"],
   },
-  python: {
-    label: "Python commands",
+  pythonToUv: {
+    label: "Python to uv",
     description: "Mutate or block python/pip commands to use uv equivalents",
     modes: ["disabled", "mutate", "block"],
   },
-  gitRebaseEditor: {
-    label: "Git rebase editor",
+  nonInteractiveGitRebase: {
+    label: "Non-interactive git rebase",
     description:
       "Inject GIT_EDITOR and GIT_SEQUENCE_EDITOR for non-interactive rebase (mutate only)",
     modes: ["disabled", "mutate"],
@@ -50,16 +50,16 @@ export function buildToolchainSettingsSections(
       items: featureItems,
     },
     {
-      label: "Package Manager",
+      label: "Node Package Manager",
       items: [
         {
-          id: "packageManager.selected",
+          id: "nodePackageManager.selected",
           label: "Selected manager",
           description:
-            "Package manager to use when packageManager feature is enabled",
+            "Package manager to use when nodePackageManager feature is enabled",
           currentValue:
-            tabConfig?.packageManager?.selected ??
-            resolved.packageManager.selected,
+            tabConfig?.nodePackageManager?.selected ??
+            resolved.nodePackageManager.selected,
           values: [...PACKAGE_MANAGERS],
         },
       ],

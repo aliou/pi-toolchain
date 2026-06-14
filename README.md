@@ -24,15 +24,15 @@ Each feature is independently set to one of three modes:
 - `"mutate"`: transparently mutate matching commands before shell execution
 - `"block"`: block matching commands via tool_call hook
 
-### packageManager
+### nodePackageManager
 
 Mutates or blocks `npm`/`yarn`/`bun` commands to use the selected package manager. Also handles `npx` -> `pnpm dlx`/`bunx`.
 
-### python
+### pythonToUv
 
 Mutates or blocks `python`/`python3` to `uv run python` and `pip`/`pip3` to `uv pip`.
 
-### gitRebaseEditor
+### nonInteractiveGitRebase
 
 Injects `GIT_EDITOR=true` and `GIT_SEQUENCE_EDITOR=:` env vars for `git rebase` commands so they run non-interactively. Only supports `"disabled"` and `"mutate"` modes (block is not applicable).
 
@@ -57,11 +57,11 @@ Configuration is loaded from two optional JSON files, merged in order (project o
 {
   "enabled": true,
   "features": {
-    "packageManager": "disabled",
-    "python": "disabled",
-    "gitRebaseEditor": "mutate"
+    "nodePackageManager": "disabled",
+    "pythonToUv": "disabled",
+    "nonInteractiveGitRebase": "mutate"
   },
-  "packageManager": {
+  "nodePackageManager": {
     "selected": "pnpm"
   },
   "ui": {
@@ -76,9 +76,9 @@ All fields are optional. Missing fields use the defaults shown above.
 
 | Feature | Default | Description |
 |---|---|---|
-| `packageManager` | `"disabled"` | Opt-in. Mutates or blocks package-manager commands. |
-| `python` | `"disabled"` | Opt-in. Mutates or blocks python/pip commands to uv equivalents. |
-| `gitRebaseEditor` | `"mutate"` | On by default. Injects non-interactive env vars for git rebase. |
+| `nodePackageManager` | `"disabled"` | Opt-in. Mutates or blocks package-manager commands. |
+| `pythonToUv` | `"disabled"` | Opt-in. Mutates or blocks python/pip commands to uv equivalents. |
+| `nonInteractiveGitRebase` | `"mutate"` | On by default. Injects non-interactive env vars for git rebase. |
 | `ui.showMutationNotifications` | `false` | Show a Pi notification each time a mutation happens. |
 
 ### Examples
@@ -88,10 +88,10 @@ Enforce pnpm, mutate python commands, and show mutation notifications:
 ```json
 {
   "features": {
-    "packageManager": "mutate",
-    "python": "mutate"
+    "nodePackageManager": "mutate",
+    "pythonToUv": "mutate"
   },
-  "packageManager": {
+  "nodePackageManager": {
     "selected": "pnpm"
   },
   "ui": {
@@ -105,9 +105,9 @@ Block package-manager mismatches instead of mutating them:
 ```json
 {
   "features": {
-    "packageManager": "block"
+    "nodePackageManager": "block"
   },
-  "packageManager": {
+  "nodePackageManager": {
     "selected": "pnpm"
   }
 }

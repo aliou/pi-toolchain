@@ -16,11 +16,11 @@ export interface ToolchainConfig {
   version?: string;
   enabled?: boolean;
   features?: {
-    packageManager?: FeatureMode;
-    python?: FeatureMode;
-    gitRebaseEditor?: FeatureMode;
+    nodePackageManager?: FeatureMode;
+    pythonToUv?: FeatureMode;
+    nonInteractiveGitRebase?: FeatureMode;
   };
-  packageManager?: {
+  nodePackageManager?: {
     selected?: "bun" | "pnpm" | "npm";
   };
   ui?: {
@@ -31,11 +31,11 @@ export interface ToolchainConfig {
 export interface ResolvedToolchainConfig {
   enabled: boolean;
   features: {
-    packageManager: FeatureMode;
-    python: FeatureMode;
-    gitRebaseEditor: FeatureMode;
+    nodePackageManager: FeatureMode;
+    pythonToUv: FeatureMode;
+    nonInteractiveGitRebase: FeatureMode;
   };
-  packageManager: {
+  nodePackageManager: {
     selected: "bun" | "pnpm" | "npm";
   };
   ui: {

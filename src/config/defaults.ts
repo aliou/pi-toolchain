@@ -3,11 +3,11 @@ import type { ResolvedToolchainConfig } from "./types";
 export const DEFAULT_CONFIG: ResolvedToolchainConfig = {
   enabled: true,
   features: {
-    packageManager: "disabled",
-    python: "disabled",
-    gitRebaseEditor: "mutate",
+    nodePackageManager: "disabled",
+    pythonToUv: "disabled",
+    nonInteractiveGitRebase: "mutate",
   },
-  packageManager: {
+  nodePackageManager: {
     selected: "pnpm",
   },
   ui: {

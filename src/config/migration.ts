@@ -14,10 +14,14 @@
  *    - features.preventDockerSecrets: removed (warn to use pi-guardrails)
  *
  * 2. rename-keys-and-mutate-mode:
- *    - features.enforcePackageManager -> features.packageManager
- *    - features.rewritePython         -> features.python
+ *    - features.enforcePackageManager -> features.nodePackageManager
+ *    - features.packageManager       -> features.nodePackageManager
+ *    - features.rewritePython         -> features.pythonToUv
+ *    - features.python                -> features.pythonToUv
+ *    - features.gitRebaseEditor       -> features.nonInteractiveGitRebase
  *    - FeatureMode "rewrite"          -> "mutate"
  *    - ui.showRewriteNotifications    -> ui.showMutationNotifications
+ *    - packageManager.selected        -> nodePackageManager.selected
  *
  * 3. remove-bash-config:
  *    - Strips stale bash.sourceMode from user configs
@@ -36,7 +40,7 @@ import type { FeatureMode, ToolchainConfig } from "./types";
  * Config schema version. Bump only when a migration is added.
  * Keep independent from package.json version.
  */
-export const CURRENT_VERSION = "0.7.0-20260612";
+export const CURRENT_VERSION = "0.7.0-20260614";
 
 /** Warnings queued during migration, flushed at session_start. */
 export const pendingWarnings: string[] = [];
@@ -109,7 +113,10 @@ function migrateFeatureModeValue(value: unknown): unknown {
   return value;
 }
 
-/** Moves a feature key from oldName to newName, migrating the value. */
+/**
+ * Moves a feature key from oldName to newName, migrating the value.
+ * If both old and new exist, new takes precedence (already renamed).
+ */
 function moveFeatureKey(
   features: Record<string, unknown>,
   oldKey: string,
@@ -123,12 +130,29 @@ function moveFeatureKey(
   delete features[oldKey];
 }
 
+/** Intermediate keys that the rename migration previously produced. */
+const STALE_FEATURE_KEYS: Record<string, string> = {
+  packageManager: "nodePackageManager",
+  python: "pythonToUv",
+  gitRebaseEditor: "nonInteractiveGitRebase",
+};
+
+/** Original v0 keys that the rename migration must handle. */
+const LEGACY_FEATURE_KEYS: Record<string, string> = {
+  enforcePackageManager: "nodePackageManager",
+  rewritePython: "pythonToUv",
+};
+
 /**
- * Migrates old config surface to the current schema:
- * - features.enforcePackageManager -> features.packageManager
- * - features.rewritePython         -> features.python
+ * Migrates old and intermediate config keys to the current schema:
+ * - features.enforcePackageManager -> features.nodePackageManager
+ * - features.packageManager        -> features.nodePackageManager
+ * - features.rewritePython         -> features.pythonToUv
+ * - features.python                -> features.pythonToUv
+ * - features.gitRebaseEditor       -> features.nonInteractiveGitRebase
  * - FeatureMode "rewrite"          -> "mutate"
  * - ui.showRewriteNotifications     -> ui.showMutationNotifications
+ * - packageManager.selected        -> nodePackageManager.selected
  */
 export function migrateRenameKeys(config: ToolchainConfig): ToolchainConfig {
   const next = structuredClone(config);
@@ -136,13 +160,20 @@ export function migrateRenameKeys(config: ToolchainConfig): ToolchainConfig {
   next.features ??= {};
   const features = next.features as Record<string, unknown>;
 
-  moveFeatureKey(features, "enforcePackageManager", "packageManager");
-  moveFeatureKey(features, "rewritePython", "python");
+  // Migrate legacy keys (v0 era)
+  for (const [oldKey, newKey] of Object.entries(LEGACY_FEATURE_KEYS)) {
+    moveFeatureKey(features, oldKey, newKey);
+  }
 
-  // gitRebaseEditor: just migrate value
-  if (features.gitRebaseEditor !== undefined) {
-    features.gitRebaseEditor = migrateFeatureModeValue(
-      features.gitRebaseEditor,
+  // Migrate intermediate keys (pre-release rename era)
+  for (const [oldKey, newKey] of Object.entries(STALE_FEATURE_KEYS)) {
+    moveFeatureKey(features, oldKey, newKey);
+  }
+
+  // nonInteractiveGitRebase: just migrate value if present
+  if (features.nonInteractiveGitRebase !== undefined) {
+    features.nonInteractiveGitRebase = migrateFeatureModeValue(
+      features.nonInteractiveGitRebase,
     );
   }
 
@@ -158,6 +189,15 @@ export function migrateRenameKeys(config: ToolchainConfig): ToolchainConfig {
   }
   delete ui.showRewriteNotifications;
 
+  // packageManager.selected -> nodePackageManager.selected
+  const topLevel = next as Record<string, unknown>;
+  if (topLevel.packageManager !== undefined) {
+    if (topLevel.nodePackageManager === undefined) {
+      topLevel.nodePackageManager = topLevel.packageManager;
+    }
+    delete topLevel.packageManager;
+  }
+
   next.version = CURRENT_VERSION;
 
   pendingWarnings.push(
@@ -172,19 +212,32 @@ export function migrateRenameKeys(config: ToolchainConfig): ToolchainConfig {
 export function needsKeyRename(config: ToolchainConfig): boolean {
   const features = config.features as Record<string, unknown> | undefined;
   const ui = config.ui as Record<string, unknown> | undefined;
+  const topLevel = config as Record<string, unknown>;
 
   if (features) {
+    // Legacy keys
     if ("enforcePackageManager" in features || "rewritePython" in features) {
       return true;
     }
-
-    // Check for leftover "rewrite" mode values
+    // Stale intermediate keys
+    if (
+      "packageManager" in features ||
+      "python" in features ||
+      "gitRebaseEditor" in features
+    ) {
+      return true;
+    }
+    // Leftover "rewrite" mode values
     for (const val of Object.values(features)) {
       if (val === "rewrite") return true;
     }
   }
 
   if (ui && "showRewriteNotifications" in ui) {
+    return true;
+  }
+
+  if ("packageManager" in topLevel) {
     return true;
   }
 

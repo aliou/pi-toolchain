@@ -11,7 +11,7 @@
 
 import type { Program } from "@aliou/sh";
 import { parse } from "@aliou/sh";
-import type { ResolvedToolchainConfig } from "../config";
+import type { ResolvedToolchainConfig } from "../config/types";
 import { walkCommands } from "../shell/ast";
 import { findCommandPosition } from "../shell/command-position";
 import { wordToString } from "../shell/word-to-string";
@@ -66,10 +66,10 @@ interface Replacement {
   text: string;
 }
 
-export function createPackageManagerRewriter(
+export function createNodePackageManagerRewriter(
   config: ResolvedToolchainConfig,
 ): Rewriter {
-  const selected = config.packageManager.selected;
+  const selected = config.nodePackageManager.selected;
 
   return (input) => {
     const { command } = input;
