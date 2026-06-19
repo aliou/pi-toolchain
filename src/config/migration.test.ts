@@ -185,6 +185,21 @@ describe("migration: rename keys + mutate mode", () => {
     expect(migrated.features?.nodePackageManager).toBe("block");
   });
 
+  it("maps current-key booleans to feature modes", () => {
+    const migrated = migrateRenameKeys({
+      version: "0.7.0-20260614",
+      features: {
+        nodePackageManager: false,
+        pythonToUv: true,
+        nonInteractiveGitRebase: false,
+      } as unknown as ToolchainConfig["features"],
+    });
+
+    expect(migrated.features?.nodePackageManager).toBe("disabled");
+    expect(migrated.features?.pythonToUv).toBe("mutate");
+    expect(migrated.features?.nonInteractiveGitRebase).toBe("disabled");
+  });
+
   it("moves packageManager.selected -> nodePackageManager.selected", () => {
     const migrated = migrateRenameKeys({
       version: "0.5.2-20260331",
@@ -247,6 +262,17 @@ describe("migration: needsKeyRename detector", () => {
         version: "0.5.2-20260331",
         features: {
           nodePackageManager: "rewrite",
+        } as unknown as ToolchainConfig["features"],
+      }),
+    ).toBe(true);
+  });
+
+  it("detects boolean mode value", () => {
+    expect(
+      needsKeyRename({
+        version: "0.7.0-20260614",
+        features: {
+          nodePackageManager: false,
         } as unknown as ToolchainConfig["features"],
       }),
     ).toBe(true);
@@ -330,5 +356,24 @@ describe("migration: full chain", () => {
 
     const resolved = resolveToolchainConfig(config);
     expect(resolved.features.nodePackageManager).toBe("mutate");
+  });
+
+  it("resolves version-stamped boolean config through migration chain", () => {
+    let config: ToolchainConfig = {
+      version: "0.7.0-20260614",
+      features: {
+        nodePackageManager: false,
+        pythonToUv: false,
+        nonInteractiveGitRebase: "mutate",
+      } as unknown as ToolchainConfig["features"],
+    };
+
+    expect(needsKeyRename(config)).toBe(true);
+    config = migrateRenameKeys(config);
+
+    const resolved = resolveToolchainConfig(config);
+    expect(resolved.features.nodePackageManager).toBe("disabled");
+    expect(resolved.features.pythonToUv).toBe("disabled");
+    expect(resolved.features.nonInteractiveGitRebase).toBe("mutate");
   });
 });

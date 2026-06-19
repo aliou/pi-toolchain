@@ -27,6 +27,7 @@
  *    - features.python                -> features.pythonToUv
  *    - features.gitRebaseEditor       -> features.nonInteractiveGitRebase
  *    - FeatureMode "rewrite"          -> "mutate"
+ *    - legacy booleans                -> FeatureMode values
  *    - ui.showRewriteNotifications    -> ui.showMutationNotifications
  *    - packageManager.selected        -> nodePackageManager.selected
  *
@@ -47,7 +48,7 @@ import type { FeatureMode, ToolchainConfig } from "./types";
  * Config schema version. Bump only when a migration is added.
  * Keep independent from package.json version.
  */
-export const CURRENT_VERSION = "0.7.0-20260614";
+export const CURRENT_VERSION = "0.8.1-20260619";
 
 // --- 1. v0: boolean -> FeatureMode ---
 
@@ -117,10 +118,11 @@ export function v0Message(before: ToolchainConfig): string {
 
 // --- 2. rename keys + "rewrite" -> "mutate" ---
 
-/** Maps legacy "rewrite" mode to "mutate". Passes all other values through
- *  (including invalid ones) so validation can reject them. */
+/** Maps legacy feature values to current modes. Passes all other values
+ *  through (including invalid ones) so validation can reject them. */
 function migrateFeatureModeValue(value: unknown): unknown {
   if (value === "rewrite") return "mutate";
+  if (typeof value === "boolean") return value ? "mutate" : "disabled";
   return value;
 }
 
@@ -162,6 +164,7 @@ const LEGACY_FEATURE_KEYS: Record<string, string> = {
  * - features.python                -> features.pythonToUv
  * - features.gitRebaseEditor       -> features.nonInteractiveGitRebase
  * - FeatureMode "rewrite"          -> "mutate"
+ * - legacy booleans                -> FeatureMode values
  * - ui.showRewriteNotifications     -> ui.showMutationNotifications
  * - packageManager.selected        -> nodePackageManager.selected
  */
@@ -232,9 +235,9 @@ export function needsKeyRename(config: ToolchainConfig): boolean {
     ) {
       return true;
     }
-    // Leftover "rewrite" mode values
+    // Leftover legacy mode values
     for (const val of Object.values(features)) {
-      if (val === "rewrite") return true;
+      if (val === "rewrite" || typeof val === "boolean") return true;
     }
   }
 
