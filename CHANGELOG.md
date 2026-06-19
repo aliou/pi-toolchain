@@ -1,5 +1,11 @@
 # @aliou/pi-toolchain
 
+## 0.8.1
+
+### Patch Changes
+
+- 28caeea: Fix migration of version-stamped boolean feature values to feature modes.
+
 ## 0.8.0
 
 ### Minor Changes
