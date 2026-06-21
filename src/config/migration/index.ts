@@ -42,7 +42,7 @@
  * gates on its own shouldRun condition and is idempotent.
  */
 
-import type { FeatureMode, ToolchainConfig } from "./types";
+import type { FeatureMode, ToolchainConfig } from "../types";
 
 /**
  * Config schema version. Bump only when a migration is added.
