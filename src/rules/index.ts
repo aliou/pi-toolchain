@@ -6,6 +6,7 @@
  */
 
 import type { ResolvedToolchainConfig } from "../config";
+import { createNixShellRewriter } from "./nix-shell";
 import { createNodePackageManagerRewriter } from "./node-package-manager";
 import { createNonInteractiveGitRebaseRewriter } from "./non-interactive-git-rebase";
 import { createPythonToUvRewriter } from "./python-to-uv";
@@ -27,6 +28,9 @@ function createRewriters(config: ResolvedToolchainConfig): Rewriter[] {
   }
   if (config.features.nonInteractiveGitRebase === "mutate") {
     rewriters.push(createNonInteractiveGitRebaseRewriter());
+  }
+  if (config.features.nixShell === "mutate") {
+    rewriters.push(createNixShellRewriter());
   }
 
   return rewriters;

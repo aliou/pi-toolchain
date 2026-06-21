@@ -43,6 +43,7 @@ describe("feature predicates", () => {
         nodePackageManager: "block",
         pythonToUv: "disabled",
         nonInteractiveGitRebase: "disabled",
+        nixShell: "disabled",
       },
     });
 
@@ -66,6 +67,13 @@ describe("feature predicates", () => {
     expect(hasToolCallFeatures(config)).toBe(true);
   });
 
+  it("hasMutationFeatures is true when nixShell is in mutate mode", () => {
+    const config = withConfig({
+      features: { nixShell: "mutate" },
+    });
+    expect(hasMutationFeatures(config)).toBe(true);
+  });
+
   it("hasToolCallFeatures is true when notifications are enabled", () => {
     const config = withConfig({
       features: { nodePackageManager: "disabled" },
@@ -81,6 +89,7 @@ describe("feature predicates", () => {
         nodePackageManager: "disabled",
         pythonToUv: "disabled",
         nonInteractiveGitRebase: "disabled",
+        nixShell: "disabled",
       },
       ui: { showMutationNotifications: false },
     });
@@ -175,6 +184,7 @@ describe("tool_call hook", () => {
         nodePackageManager: "disabled",
         pythonToUv: "disabled",
         nonInteractiveGitRebase: "disabled",
+        nixShell: "disabled",
       },
       ui: { showMutationNotifications: false },
     });
@@ -289,6 +299,7 @@ describe("tool_call hook", () => {
         nodePackageManager: "disabled",
         pythonToUv: "disabled",
         nonInteractiveGitRebase: "disabled",
+        nixShell: "disabled",
       },
       ui: { showMutationNotifications: true },
     });

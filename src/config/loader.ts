@@ -41,10 +41,16 @@ function sanitizeAndValidate(
     "nonInteractiveGitRebase",
     config.features.nonInteractiveGitRebase,
   );
+  assertFeatureMode("nixShell", config.features.nixShell);
 
   if (config.features.nonInteractiveGitRebase === "block") {
     throw new Error(
       '[toolchain] Invalid config: features.nonInteractiveGitRebase must be "disabled" or "mutate" (block is not supported)',
+    );
+  }
+  if (config.features.nixShell === "block") {
+    throw new Error(
+      '[toolchain] Invalid config: features.nixShell must be "disabled" or "mutate" (block is not supported)',
     );
   }
 

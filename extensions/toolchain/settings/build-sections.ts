@@ -28,6 +28,12 @@ const FEATURE_UI: Record<
       "Inject GIT_EDITOR and GIT_SEQUENCE_EDITOR for non-interactive rebase (mutate only)",
     modes: ["disabled", "mutate"],
   },
+  nixShell: {
+    label: "Nix shell / devShell",
+    description:
+      "Wrap commands in nix-shell or nix develop when shell.nix / flake.nix is detected (mutate only)",
+    modes: ["disabled", "mutate"],
+  },
 };
 
 const PACKAGE_MANAGERS = ["pnpm", "bun", "npm"] as const;

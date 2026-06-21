@@ -19,6 +19,7 @@ export interface ToolchainConfig {
     nodePackageManager?: FeatureMode;
     pythonToUv?: FeatureMode;
     nonInteractiveGitRebase?: FeatureMode;
+    nixShell?: FeatureMode;
   };
   nodePackageManager?: {
     selected?: "bun" | "pnpm" | "npm";
@@ -34,6 +35,7 @@ export interface ResolvedToolchainConfig {
     nodePackageManager: FeatureMode;
     pythonToUv: FeatureMode;
     nonInteractiveGitRebase: FeatureMode;
+    nixShell: FeatureMode;
   };
   nodePackageManager: {
     selected: "bun" | "pnpm" | "npm";

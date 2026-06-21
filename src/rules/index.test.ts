@@ -1,3 +1,6 @@
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { ResolvedToolchainConfig } from "../config";
 import { resolveToolchainConfig } from "../config";
@@ -63,12 +66,52 @@ describe("analyzeRewrite", () => {
     expect(result.notices).toHaveLength(1);
   });
 
+  it("mutates nix shell commands when shell.nix exists", () => {
+    const dir = mkdtempSync(join(tmpdir(), "toolchain-nix-"));
+    writeFileSync(join(dir, "shell.nix"), "{}");
+    const originalCwd = process.cwd();
+    process.chdir(dir);
+
+    try {
+      const config = withConfig({
+        features: { nixShell: "mutate" },
+      });
+
+      const result = analyzeRewrite({ command: "node --version" }, config);
+
+      expect(result.command).toBe("nix-shell --run 'node --version'");
+      expect(result.notices).toHaveLength(1);
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it("does not mutate nix shell commands when no nix files exist", () => {
+    const dir = mkdtempSync(join(tmpdir(), "toolchain-nix-"));
+    const originalCwd = process.cwd();
+    process.chdir(dir);
+
+    try {
+      const config = withConfig({
+        features: { nixShell: "mutate" },
+      });
+
+      const result = analyzeRewrite({ command: "node --version" }, config);
+
+      expect(result.command).toBe("node --version");
+      expect(result.notices).toHaveLength(0);
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
   it("returns command unchanged when no mutate features enabled", () => {
     const config = withConfig({
       features: {
         nodePackageManager: "disabled",
         pythonToUv: "disabled",
         nonInteractiveGitRebase: "disabled",
+        nixShell: "disabled",
       },
     });
 

@@ -6,6 +6,7 @@ export const DEFAULT_CONFIG: ResolvedToolchainConfig = {
     nodePackageManager: "disabled",
     pythonToUv: "disabled",
     nonInteractiveGitRebase: "mutate",
+    nixShell: "disabled",
   },
   nodePackageManager: {
     selected: "pnpm",

@@ -16,6 +16,7 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import type { ResolvedToolchainConfig } from "../../../src/config";
 import { analyzeRewrite } from "../../../src/rules";
+import { detectNixShell } from "../../../src/rules/nix-shell";
 import { detectForeignPackageManager } from "../../../src/rules/node-package-manager";
 import { detectPythonCommand } from "../../../src/rules/python-to-uv";
 
@@ -67,13 +68,32 @@ function checkPythonToUvBlocker(
   };
 }
 
+function checkNixShellBlocker(
+  _command: string,
+  config: ResolvedToolchainConfig,
+): BlockResult | null {
+  if (config.features.nixShell !== "block") return null;
+
+  const nixType = detectNixShell(process.cwd());
+  if (!nixType) return null;
+
+  const tool = nixType === "flake" ? "nix develop" : "nix-shell";
+  return {
+    notification: `Blocked raw command. This project uses a nix shell.`,
+    reason:
+      `This project has a ${nixType === "flake" ? "flake.nix" : "shell.nix"} ` +
+      `with a devShell. Use \`${tool}\` to run commands inside the nix environment.`,
+  };
+}
+
 function checkBlockers(
   command: string,
   config: ResolvedToolchainConfig,
 ): BlockResult | null {
   return (
     checkNodePackageManagerBlocker(command, config) ??
-    checkPythonToUvBlocker(command, config)
+    checkPythonToUvBlocker(command, config) ??
+    checkNixShellBlocker(command, config)
   );
 }
 
@@ -83,6 +103,7 @@ export function hasToolCallFeatures(config: ResolvedToolchainConfig): boolean {
   return (
     config.features.nodePackageManager === "block" ||
     config.features.pythonToUv === "block" ||
+    config.features.nixShell === "block" ||
     hasMutationFeatures(config) ||
     config.ui.showMutationNotifications
   );
@@ -92,7 +113,8 @@ export function hasMutationFeatures(config: ResolvedToolchainConfig): boolean {
   return (
     config.features.nodePackageManager === "mutate" ||
     config.features.pythonToUv === "mutate" ||
-    config.features.nonInteractiveGitRebase === "mutate"
+    config.features.nonInteractiveGitRebase === "mutate" ||
+    config.features.nixShell === "mutate"
   );
 }
 
