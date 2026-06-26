@@ -1,5 +1,11 @@
 # @aliou/pi-toolchain
 
+## 0.9.1
+
+### Patch Changes
+
+- 15c0a61: Use bash cwd parameters when detecting nix shell files.
+
 ## 0.9.0
 
 ### Minor Changes
