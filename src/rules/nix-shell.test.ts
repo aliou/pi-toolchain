@@ -92,6 +92,17 @@ describe("createNixShellRewriter", () => {
     }
   });
 
+  it("uses input cwd before process cwd", () => {
+    const dir = mkdtempSync(join(tmpdir(), "toolchain-nix-"));
+    writeFileSync(join(dir, "shell.nix"), "{}");
+
+    const rewriter = createNixShellRewriter();
+    const result = rewriter({ command: "node --version", cwd: dir });
+
+    expect(result.command).toBe("nix-shell --run 'node --version'");
+    expect(result.notices).toHaveLength(1);
+  });
+
   it("wraps command with nix develop when flake.nix with devShell exists", () => {
     const dir = mkdtempSync(join(tmpdir(), "toolchain-nix-"));
     writeFileSync(

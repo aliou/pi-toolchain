@@ -10,10 +10,8 @@
  *    from the rewrite analysis are emitted as Pi warnings.
  */
 
-import {
-  type ExtensionAPI,
-  isToolCallEventType,
-} from "@earendil-works/pi-coding-agent";
+import { resolve } from "node:path";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { ResolvedToolchainConfig } from "../../../src/config";
 import { analyzeRewrite } from "../../../src/rules";
 import { detectNixShell } from "../../../src/rules/nix-shell";
@@ -71,10 +69,11 @@ function checkPythonToUvBlocker(
 function checkNixShellBlocker(
   _command: string,
   config: ResolvedToolchainConfig,
+  cwd: string,
 ): BlockResult | null {
   if (config.features.nixShell !== "block") return null;
 
-  const nixType = detectNixShell(process.cwd());
+  const nixType = detectNixShell(cwd);
   if (!nixType) return null;
 
   const tool = nixType === "flake" ? "nix develop" : "nix-shell";
@@ -89,11 +88,12 @@ function checkNixShellBlocker(
 function checkBlockers(
   command: string,
   config: ResolvedToolchainConfig,
+  cwd: string,
 ): BlockResult | null {
   return (
     checkNodePackageManagerBlocker(command, config) ??
     checkPythonToUvBlocker(command, config) ??
-    checkNixShellBlocker(command, config)
+    checkNixShellBlocker(command, config, cwd)
   );
 }
 
@@ -118,6 +118,15 @@ export function hasMutationFeatures(config: ResolvedToolchainConfig): boolean {
   );
 }
 
+function getToolCallCwd(
+  input: Readonly<Record<string, unknown>>,
+  baseCwd: string,
+): string {
+  const cwd = input.cwd;
+  if (typeof cwd !== "string" || cwd.length === 0) return baseCwd;
+  return resolve(baseCwd, cwd);
+}
+
 // --- Extension hook ---
 
 export function registerToolCallHandler(
@@ -125,13 +134,16 @@ export function registerToolCallHandler(
   config: ResolvedToolchainConfig,
 ): void {
   pi.on("tool_call", async (event, ctx) => {
-    if (!isToolCallEventType("bash", event)) return;
+    if (event.toolName !== "bash") return;
 
-    const command = String(event.input.command ?? "");
+    const input = event.input as Record<string, unknown>;
+    const command = String(input.command ?? "");
     if (!command) return;
 
+    const cwd = getToolCallCwd(input, ctx.cwd ?? process.cwd());
+
     // 1. Blockers first
-    const blocked = checkBlockers(command, config);
+    const blocked = checkBlockers(command, config, cwd);
     if (blocked) {
       ctx.ui.notify(blocked.notification, "warning");
       return { block: true, reason: blocked.reason };
@@ -149,6 +161,7 @@ export function registerToolCallHandler(
       const rewriteResult = analyzeRewrite(
         {
           command,
+          cwd,
           env: process.env,
         },
         config,

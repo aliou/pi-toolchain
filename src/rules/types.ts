@@ -4,6 +4,8 @@ export interface RewriteNotice {
 
 export interface RewriteInput {
   command: string;
+  /** Working directory to evaluate project-local toolchain files from. */
+  cwd?: string;
   /**
    * Optional env snapshot.
    * Needed to preserve current git-rebase behavior which skips

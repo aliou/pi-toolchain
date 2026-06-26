@@ -1,3 +1,6 @@
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it } from "vitest";
 import type { ResolvedToolchainConfig } from "../../../src/config";
@@ -175,6 +178,47 @@ describe("tool_call hook", () => {
     );
 
     expect(event.input.command).toBe("uv run python script.py");
+  });
+
+  it("uses bash cwd param for nix shell mutation", async () => {
+    const baseDir = mkdtempSync(join(tmpdir(), "toolchain-base-"));
+    const projectDir = join(baseDir, "project");
+    mkdirSync(projectDir);
+    writeFileSync(join(projectDir, "shell.nix"), "{}");
+
+    const { pi, toolCallHandlers } = createPiStub();
+    const config = withConfig({
+      features: { nixShell: "mutate" },
+      ui: { showMutationNotifications: false },
+    });
+
+    registerToolCallHandler(pi, config);
+
+    const event = {
+      toolName: "bash",
+      input: { command: "node --version", cwd: "project" },
+    };
+
+    const originalInNixShell = process.env.IN_NIX_SHELL;
+    delete process.env.IN_NIX_SHELL;
+
+    try {
+      await toolCallHandlers[0](
+        event as never,
+        {
+          cwd: baseDir,
+          ui: { notify() {} },
+        } as never,
+      );
+    } finally {
+      if (originalInNixShell === undefined) {
+        delete process.env.IN_NIX_SHELL;
+      } else {
+        process.env.IN_NIX_SHELL = originalInNixShell;
+      }
+    }
+
+    expect(event.input.command).toBe("nix-shell --run 'node --version'");
   });
 
   it("does not mutate when no mutate features are enabled", async () => {

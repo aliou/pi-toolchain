@@ -2,7 +2,7 @@
  * Nix shell / devShell rewriter.
  *
  * When shell.nix or flake.nix (with a devShell) is detected in the
- * current working directory, wraps bash commands to run inside the
+ * command working directory, wraps bash commands to run inside the
  * nix environment.
  *
  * - shell.nix  -> nix-shell --run 'command'
@@ -11,7 +11,7 @@
  * Skips rewriting when:
  * - Already inside a nix shell (IN_NIX_SHELL env var is set)
  * - The command itself is a nix command (nix-shell, nix develop, etc.)
- * - No shell.nix or flake.nix with devShell is found in cwd.
+ * - No shell.nix or flake.nix with devShell is found in the command cwd.
  *
  * If AST parse fails, falls back to checking the first raw word.
  */
@@ -59,14 +59,14 @@ function escapeForSingleQuotes(command: string): string {
 
 export function createNixShellRewriter(): Rewriter {
   return (input) => {
-    const { command, env } = input;
+    const { command, cwd, env } = input;
 
     // Skip if already inside a nix shell (e.g. direnv or manual nix-shell)
     if (env?.IN_NIX_SHELL) {
       return { command, notices: [] };
     }
 
-    const nixType = detectNixShell(process.cwd());
+    const nixType = detectNixShell(cwd ?? process.cwd());
     if (!nixType) {
       return { command, notices: [] };
     }
