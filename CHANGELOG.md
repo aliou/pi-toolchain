@@ -1,5 +1,11 @@
 # @aliou/pi-toolchain
 
+## 0.10.0
+
+### Minor Changes
+
+- e86681a: Add a `pythonToPython3` rule that rewrites bare `python` command invocations to `python3` when enabled.
+
 ## 0.9.1
 
 ### Patch Changes
