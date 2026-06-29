@@ -16,6 +16,7 @@ import type { ResolvedToolchainConfig } from "../../../src/config";
 import { analyzeRewrite } from "../../../src/rules";
 import { detectNixShell } from "../../../src/rules/nix-shell";
 import { detectForeignPackageManager } from "../../../src/rules/node-package-manager";
+import { detectBarePythonCommand } from "../../../src/rules/python-to-python3";
 import { detectPythonCommand } from "../../../src/rules/python-to-uv";
 
 // --- Blocker detection ---
@@ -44,6 +45,21 @@ function checkNodePackageManagerBlocker(
       `This project uses ${selected} as the package manager. ` +
       `Replace \`${detected}\` with \`${selected}\` ` +
       `(or \`${selected} dlx\` for npx-style commands).`,
+  };
+}
+
+function checkPythonToPython3Blocker(
+  command: string,
+  config: ResolvedToolchainConfig,
+): BlockResult | null {
+  if (config.features.pythonToPython3 !== "block") return null;
+
+  const detected = detectBarePythonCommand(command);
+  if (!detected) return null;
+
+  return {
+    notification: "Blocked python command. Use python3 instead.",
+    reason: "Use `python3` instead of `python`.",
   };
 }
 
@@ -92,6 +108,7 @@ function checkBlockers(
 ): BlockResult | null {
   return (
     checkNodePackageManagerBlocker(command, config) ??
+    checkPythonToPython3Blocker(command, config) ??
     checkPythonToUvBlocker(command, config) ??
     checkNixShellBlocker(command, config, cwd)
   );
@@ -102,6 +119,7 @@ function checkBlockers(
 export function hasToolCallFeatures(config: ResolvedToolchainConfig): boolean {
   return (
     config.features.nodePackageManager === "block" ||
+    config.features.pythonToPython3 === "block" ||
     config.features.pythonToUv === "block" ||
     config.features.nixShell === "block" ||
     hasMutationFeatures(config) ||
@@ -112,6 +130,7 @@ export function hasToolCallFeatures(config: ResolvedToolchainConfig): boolean {
 export function hasMutationFeatures(config: ResolvedToolchainConfig): boolean {
   return (
     config.features.nodePackageManager === "mutate" ||
+    config.features.pythonToPython3 === "mutate" ||
     config.features.pythonToUv === "mutate" ||
     config.features.nonInteractiveGitRebase === "mutate" ||
     config.features.nixShell === "mutate"

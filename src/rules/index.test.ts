@@ -55,15 +55,45 @@ describe("analyzeRewrite", () => {
     expect(result.notices).toHaveLength(1);
   });
 
-  it("mutates python commands", () => {
+  it("mutates bare python commands to python3", () => {
     const config = withConfig({
-      features: { pythonToUv: "mutate" },
+      features: { pythonToPython3: "mutate" },
     });
 
     const result = analyzeRewrite({ command: "python script.py" }, config);
 
-    expect(result.command).toBe("uv run python script.py");
+    expect(result.command).toBe("python3 script.py");
     expect(result.notices).toHaveLength(1);
+  });
+
+  it("mutates bare python commands inside full commands", () => {
+    const config = withConfig({
+      features: { pythonToPython3: "mutate" },
+    });
+
+    const result = analyzeRewrite(
+      {
+        command:
+          "rm -rf tmp && python - <<'PY'\nprint('python should stay in heredoc')\nPY",
+      },
+      config,
+    );
+
+    expect(result.command).toBe(
+      "rm -rf tmp && python3 - <<'PY'\nprint('python should stay in heredoc')\nPY",
+    );
+    expect(result.notices).toHaveLength(1);
+  });
+
+  it("mutates python commands to uv after python3 when both features are enabled", () => {
+    const config = withConfig({
+      features: { pythonToPython3: "mutate", pythonToUv: "mutate" },
+    });
+
+    const result = analyzeRewrite({ command: "python script.py" }, config);
+
+    expect(result.command).toBe("uv run python3 script.py");
+    expect(result.notices).toHaveLength(2);
   });
 
   it("mutates nix shell commands when shell.nix exists", () => {
@@ -109,6 +139,7 @@ describe("analyzeRewrite", () => {
     const config = withConfig({
       features: {
         nodePackageManager: "disabled",
+        pythonToPython3: "disabled",
         pythonToUv: "disabled",
         nonInteractiveGitRebase: "disabled",
         nixShell: "disabled",

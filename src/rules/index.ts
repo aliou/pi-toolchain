@@ -9,6 +9,7 @@ import type { ResolvedToolchainConfig } from "../config";
 import { createNixShellRewriter } from "./nix-shell";
 import { createNodePackageManagerRewriter } from "./node-package-manager";
 import { createNonInteractiveGitRebaseRewriter } from "./non-interactive-git-rebase";
+import { createPythonToPython3Rewriter } from "./python-to-python3";
 import { createPythonToUvRewriter } from "./python-to-uv";
 import type {
   RewriteInput,
@@ -22,6 +23,9 @@ function createRewriters(config: ResolvedToolchainConfig): Rewriter[] {
 
   if (config.features.nodePackageManager === "mutate") {
     rewriters.push(createNodePackageManagerRewriter(config));
+  }
+  if (config.features.pythonToPython3 === "mutate") {
+    rewriters.push(createPythonToPython3Rewriter());
   }
   if (config.features.pythonToUv === "mutate") {
     rewriters.push(createPythonToUvRewriter());

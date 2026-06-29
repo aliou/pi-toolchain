@@ -17,6 +17,7 @@ export interface ToolchainConfig {
   enabled?: boolean;
   features?: {
     nodePackageManager?: FeatureMode;
+    pythonToPython3?: FeatureMode;
     pythonToUv?: FeatureMode;
     nonInteractiveGitRebase?: FeatureMode;
     nixShell?: FeatureMode;
@@ -33,6 +34,7 @@ export interface ResolvedToolchainConfig {
   enabled: boolean;
   features: {
     nodePackageManager: FeatureMode;
+    pythonToPython3: FeatureMode;
     pythonToUv: FeatureMode;
     nonInteractiveGitRebase: FeatureMode;
     nixShell: FeatureMode;

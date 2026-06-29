@@ -44,6 +44,7 @@ describe("feature predicates", () => {
     const config = withConfig({
       features: {
         nodePackageManager: "block",
+        pythonToPython3: "disabled",
         pythonToUv: "disabled",
         nonInteractiveGitRebase: "disabled",
         nixShell: "disabled",
@@ -90,6 +91,7 @@ describe("feature predicates", () => {
     const config = withConfig({
       features: {
         nodePackageManager: "disabled",
+        pythonToPython3: "disabled",
         pythonToUv: "disabled",
         nonInteractiveGitRebase: "disabled",
         nixShell: "disabled",
@@ -226,6 +228,7 @@ describe("tool_call hook", () => {
     const config = withConfig({
       features: {
         nodePackageManager: "disabled",
+        pythonToPython3: "disabled",
         pythonToUv: "disabled",
         nonInteractiveGitRebase: "disabled",
         nixShell: "disabled",
@@ -341,6 +344,7 @@ describe("tool_call hook", () => {
     const config = withConfig({
       features: {
         nodePackageManager: "disabled",
+        pythonToPython3: "disabled",
         pythonToUv: "disabled",
         nonInteractiveGitRebase: "disabled",
         nixShell: "disabled",

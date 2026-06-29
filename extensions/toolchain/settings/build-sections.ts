@@ -17,6 +17,11 @@ const FEATURE_UI: Record<
       "Mutate or block npm/yarn/bun commands to use the selected package manager",
     modes: ["disabled", "mutate", "block"],
   },
+  pythonToPython3: {
+    label: "Python to python3",
+    description: "Mutate or block bare python commands to use python3",
+    modes: ["disabled", "mutate", "block"],
+  },
   pythonToUv: {
     label: "Python to uv",
     description: "Mutate or block python/pip commands to use uv equivalents",

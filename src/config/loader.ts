@@ -36,6 +36,7 @@ function sanitizeAndValidate(
   config: ResolvedToolchainConfig,
 ): ResolvedToolchainConfig {
   assertFeatureMode("nodePackageManager", config.features.nodePackageManager);
+  assertFeatureMode("pythonToPython3", config.features.pythonToPython3);
   assertFeatureMode("pythonToUv", config.features.pythonToUv);
   assertFeatureMode(
     "nonInteractiveGitRebase",

@@ -28,6 +28,10 @@ Each feature is independently set to one of three modes:
 
 Mutates or blocks `npm`/`yarn`/`bun` commands to use the selected package manager. Also handles `npx` -> `pnpm dlx`/`bunx`.
 
+### pythonToPython3
+
+Mutates or blocks bare `python` commands to use `python3`.
+
 ### pythonToUv
 
 Mutates or blocks `python`/`python3` to `uv run python` and `pip`/`pip3` to `uv pip`.
@@ -58,6 +62,7 @@ Configuration is loaded from two optional JSON files, merged in order (project o
   "enabled": true,
   "features": {
     "nodePackageManager": "disabled",
+    "pythonToPython3": "disabled",
     "pythonToUv": "disabled",
     "nonInteractiveGitRebase": "mutate"
   },
@@ -77,6 +82,7 @@ All fields are optional. Missing fields use the defaults shown above.
 | Feature | Default | Description |
 |---|---|---|
 | `nodePackageManager` | `"disabled"` | Opt-in. Mutates or blocks package-manager commands. |
+| `pythonToPython3` | `"disabled"` | Opt-in. Mutates or blocks bare python commands to python3. |
 | `pythonToUv` | `"disabled"` | Opt-in. Mutates or blocks python/pip commands to uv equivalents. |
 | `nonInteractiveGitRebase` | `"mutate"` | On by default. Injects non-interactive env vars for git rebase. |
 | `ui.showMutationNotifications` | `false` | Show a Pi notification each time a mutation happens. |
