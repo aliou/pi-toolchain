@@ -1,5 +1,11 @@
 # @aliou/pi-toolchain
 
+## 0.10.1
+
+### Patch Changes
+
+- 371a838: Keep wrapping nix shell commands even when Pi inherited `IN_NIX_SHELL` from another project.
+
 ## 0.10.0
 
 ### Minor Changes
