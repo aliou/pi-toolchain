@@ -9,9 +9,12 @@
  * - flake.nix  -> nix develop --command sh -c 'command'
  *
  * Skips rewriting when:
- * - Already inside a nix shell (IN_NIX_SHELL env var is set)
  * - The command itself is a nix command (nix-shell, nix develop, etc.)
  * - No shell.nix or flake.nix with devShell is found in the command cwd.
+ *
+ * Note: IN_NIX_SHELL is intentionally ignored. Pi can be launched from a
+ * different project's nix shell, and tool calls inherit that environment even
+ * when their cwd targets another project.
  *
  * If AST parse fails, falls back to checking the first raw word.
  */
@@ -59,12 +62,7 @@ function escapeForSingleQuotes(command: string): string {
 
 export function createNixShellRewriter(): Rewriter {
   return (input) => {
-    const { command, cwd, env } = input;
-
-    // Skip if already inside a nix shell (e.g. direnv or manual nix-shell)
-    if (env?.IN_NIX_SHELL) {
-      return { command, notices: [] };
-    }
+    const { command, cwd } = input;
 
     const nixType = detectNixShell(cwd ?? process.cwd());
     if (!nixType) {

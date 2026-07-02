@@ -122,7 +122,7 @@ describe("createNixShellRewriter", () => {
     }
   });
 
-  it("does not rewrite when already inside a nix shell", () => {
+  it("rewrites even when the parent process is inside a nix shell", () => {
     const dir = mkdtempSync(join(tmpdir(), "toolchain-nix-"));
     writeFileSync(join(dir, "shell.nix"), "{}");
     const originalCwd = process.cwd();
@@ -134,8 +134,8 @@ describe("createNixShellRewriter", () => {
         command: "node --version",
         env: { IN_NIX_SHELL: "1" },
       });
-      expect(result.command).toBe("node --version");
-      expect(result.notices).toHaveLength(0);
+      expect(result.command).toBe("nix-shell --run 'node --version'");
+      expect(result.notices).toHaveLength(1);
     } finally {
       process.chdir(originalCwd);
     }
