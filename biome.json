@@ -12,7 +12,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**/*.ts", "**/*.json", "!.pi/*"],
+    "includes": ["**/*.ts", "**/*.json", "!.pi/*", "!schema.json"],
     "ignoreUnknown": true
   },
   "assist": {

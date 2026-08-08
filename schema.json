@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/ToolchainConfig",
+  "definitions": {
+    "ToolchainConfig": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "string",
+              "pattern": "^\\d{1,15}(\\.\\d{1,15})?(\\.\\d{1,15})?$"
+            }
+          ],
+          "description": "Config schema version, stamped by migrations. Current version: 0.10.1."
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "features": {
+          "type": "object",
+          "properties": {
+            "nodePackageManager": {
+              "$ref": "#/definitions/FeatureMode"
+            },
+            "pythonToPython3": {
+              "$ref": "#/definitions/FeatureMode"
+            },
+            "pythonToUv": {
+              "$ref": "#/definitions/FeatureMode"
+            },
+            "nonInteractiveGitRebase": {
+              "$ref": "#/definitions/FeatureMode"
+            },
+            "nixShell": {
+              "$ref": "#/definitions/FeatureMode"
+            }
+          },
+          "additionalProperties": false
+        },
+        "nodePackageManager": {
+          "type": "object",
+          "properties": {
+            "selected": {
+              "type": "string",
+              "enum": [
+                "bun",
+                "pnpm",
+                "npm"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "ui": {
+          "type": "object",
+          "properties": {
+            "showMutationNotifications": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "$schema": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "FeatureMode": {
+      "type": "string",
+      "enum": [
+        "disabled",
+        "mutate",
+        "block"
+      ],
+      "description": "Configuration schema for the toolchain extension.\n\nToolchainConfig is the user-facing schema (all fields optional). ResolvedToolchainConfig is the internal schema (all fields required, defaults applied).\n\nFeature modes:\n- \"disabled\": feature is off\n- \"mutate\": transparently mutate matching commands before shell execution\n- \"block\": block matching commands via tool_call hook"
+    }
+  }
+}

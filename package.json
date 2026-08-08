@@ -27,6 +27,7 @@
   "files": [
     "src",
     "extensions",
+    "schema.json",
     "README.md",
     "!src/**/*.test.ts",
     "!extensions/**/*.test.ts"
@@ -35,7 +36,7 @@
   "license": "MIT",
   "private": false,
   "dependencies": {
-    "@aliou/pi-utils-settings": "^0.17.0",
+    "@aliou/pi-utils-settings": "^0.19.1",
     "@aliou/sh": "^0.2.0"
   },
   "peerDependencies": {
@@ -50,6 +51,7 @@
     "@earendil-works/pi-tui": "0.79.9",
     "@types/node": "^25.9.3",
     "husky": "^9.1.7",
+    "ts-json-schema-generator": "^2.9.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.8"
   },
@@ -64,6 +66,8 @@
     "test": "vitest run",
     "lint": "biome check",
     "format": "biome check --write",
+    "gen:schema": "pi-settings-schema -p src/config/types.ts -t ToolchainConfig -o schema.json --version 0.10.1 --tsconfig tsconfig.json",
+    "check:schema": "pi-settings-schema -p src/config/types.ts -t ToolchainConfig -o schema.json --version 0.10.1 --tsconfig tsconfig.json --check",
     "check:lockfile": "pnpm install --frozen-lockfile --ignore-scripts",
     "prepare": "[ -d .git ] && husky || true",
     "changeset": "changeset",
