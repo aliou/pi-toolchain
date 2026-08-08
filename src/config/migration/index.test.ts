@@ -1,48 +1,47 @@
 import { describe, expect, it } from "vitest";
 import { resolveToolchainConfig, type ToolchainConfig } from "../../config";
-import { migrateRenameKeys, migrateV0, needsKeyRename } from "./index";
+import {
+  hasLegacyVersionStamp,
+  normalizeVersionStampMigration,
+} from "./02-normalize-version-stamp";
+import { migrations, v090Migration } from "./index";
 
 describe("migration chain", () => {
-  it("resolves v0 config through full migration chain", () => {
-    let config: ToolchainConfig = {
+  it("registers exactly the expected migrations in order", () => {
+    expect(migrations.map((m) => m.name)).toEqual([
+      "v0-9-0",
+      "normalize-version-stamp",
+    ]);
+    expect(migrations[0]?.version).toBe("0.9.0");
+    expect(migrations[1]?.version).toBe("0.10.1");
+  });
+
+  it("resolves v0 config through both migrations", async () => {
+    const config: ToolchainConfig = {
       enabled: true,
       features: {
         enforcePackageManager: true,
       } as unknown as ToolchainConfig["features"],
     };
 
-    config = migrateV0(config);
-    expect(
-      (config.features as Record<string, unknown>).enforcePackageManager,
-    ).toBe("mutate");
+    const after090 = await v090Migration.run(config, "", {
+      filePath: "",
+      appliedMigrations: [],
+      fromVersion: "0.0.0",
+      toVersion: "0.9.0",
+    });
+    expect(hasLegacyVersionStamp(after090)).toBe(true);
 
-    expect(needsKeyRename(config)).toBe(true);
-    config = migrateRenameKeys(config);
-    expect(config.features?.nodePackageManager).toBe("mutate");
-    expect(
-      (config.features as Record<string, unknown>).enforcePackageManager,
-    ).toBeUndefined();
+    const migrated = await normalizeVersionStampMigration.run(after090, "", {
+      filePath: "",
+      appliedMigrations: ["v0-9-0"],
+      fromVersion: "0.9.0",
+      toVersion: "0.10.1",
+    });
+    expect(migrated.version).toBe("0.10.1");
 
-    const resolved = resolveToolchainConfig(config);
+    const resolved = resolveToolchainConfig(migrated);
     expect(resolved.features.nodePackageManager).toBe("mutate");
-  });
-
-  it("resolves version-stamped boolean config through migration chain", () => {
-    let config: ToolchainConfig = {
-      version: "0.7.0-20260614",
-      features: {
-        nodePackageManager: false,
-        pythonToUv: false,
-        nonInteractiveGitRebase: "mutate",
-      } as unknown as ToolchainConfig["features"],
-    };
-
-    expect(needsKeyRename(config)).toBe(true);
-    config = migrateRenameKeys(config);
-
-    const resolved = resolveToolchainConfig(config);
-    expect(resolved.features.nodePackageManager).toBe("disabled");
-    expect(resolved.features.pythonToUv).toBe("disabled");
-    expect(resolved.features.nonInteractiveGitRebase).toBe("mutate");
+    expect(resolved.features.nixShell).toBe("disabled");
   });
 });

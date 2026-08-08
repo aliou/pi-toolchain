@@ -1,4 +1,5 @@
-import { ConfigLoader } from "@aliou/pi-utils-settings";
+import { buildSchemaUrl, ConfigLoader } from "@aliou/pi-utils-settings";
+import pkg from "../../package.json" with { type: "json" };
 import { DEFAULT_CONFIG } from "./defaults";
 import { migrations } from "./migration";
 import type { ResolvedToolchainConfig, ToolchainConfig } from "./types";
@@ -76,11 +77,14 @@ export function resolveToolchainConfig(
   return sanitizeAndValidate(resolved);
 }
 
+const schemaUrl = buildSchemaUrl(pkg.name, pkg.version);
+
 export const configLoader = new ConfigLoader<
   ToolchainConfig,
   ResolvedToolchainConfig
 >("toolchain", DEFAULT_CONFIG, {
   scopes: ["global", "local", "memory"],
   migrations,
+  schemaUrl,
   afterMerge: (resolved) => sanitizeAndValidate(resolved),
 });
