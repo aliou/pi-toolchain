@@ -46,7 +46,9 @@ Run `/toolchain:settings` to open an interactive settings UI with two tabs:
 - **Local**: edit project-scoped config (`.pi/extensions/toolchain.json`)
 - **Global**: edit global config (`~/.pi/agent/extensions/toolchain.json`)
 
-Use `Tab` / `Shift+Tab` to switch tabs. Feature modes and the package manager can be changed directly. Configure mutation notification visibility in JSON for now.
+Use `Tab` / `Shift+Tab` to switch tabs. Feature modes and the package manager can be changed directly. Saved changes apply to the next tool call without `/reload`. Configure mutation notification visibility in JSON for now.
+
+The Local tab is read-only until Pi trusts the project. Use `/trust` and restart Pi to apply project settings.
 
 ## Configuration
 
@@ -54,6 +56,8 @@ Configuration is loaded from two optional JSON files, merged in order (project o
 
 - **Global**: `~/.pi/agent/extensions/toolchain.json`
 - **Project**: `.pi/extensions/toolchain.json`
+
+Project config is read and migrated only after Pi confirms project trust at session start. Untrusted project files are ignored and left unchanged; global settings and defaults still apply.
 
 ### Configuration Schema
 

@@ -1,9 +1,7 @@
+import { bindProjectConfig } from "@aliou/pi-utils-settings";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { configLoader } from "../../src/config";
-import {
-  hasToolCallFeatures,
-  registerToolCallHandler,
-} from "./hooks/tool-call";
+import { registerToolCallHandler } from "./hooks/tool-call";
 import { registerToolchainSettings } from "./settings";
 
 /**
@@ -27,8 +25,7 @@ import { registerToolchainSettings } from "./settings";
  */
 export default async function (pi: ExtensionAPI) {
   await configLoader.load();
-  const config = configLoader.getConfig();
-  if (!config.enabled) return;
+  bindProjectConfig(pi, configLoader);
 
   registerToolchainSettings(pi);
 
@@ -36,15 +33,9 @@ export default async function (pi: ExtensionAPI) {
     const messages = configLoader.drainMessages();
     if (messages.length === 0) return;
 
-    // Send a single notification rather than one per message. The header and
-    // "[toolchain]" prefix live here instead of in the migration message
-    // strings, so individual messages stay self-contained. Always uses the
-    // same bulleted layout, regardless of message count.
     const body = messages.map((m) => `- ${m}`).join("\n");
-    ctx.ui.notify(`[toolchain] Your config was migrated:\n${body}`, "warning");
+    ctx.ui.notify(`[toolchain] Config notices:\n${body}`, "warning");
   });
 
-  if (hasToolCallFeatures(config)) {
-    registerToolCallHandler(pi, config);
-  }
+  registerToolCallHandler(pi, () => configLoader.getConfig());
 }

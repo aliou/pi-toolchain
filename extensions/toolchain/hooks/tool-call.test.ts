@@ -113,7 +113,7 @@ describe("tool_call hook", () => {
       ui: { showMutationNotifications: false },
     });
 
-    registerToolCallHandler(pi, config);
+    registerToolCallHandler(pi, () => config);
 
     const event = {
       toolName: "bash",
@@ -141,7 +141,7 @@ describe("tool_call hook", () => {
       ui: { showMutationNotifications: false },
     });
 
-    registerToolCallHandler(pi, config);
+    registerToolCallHandler(pi, () => config);
 
     const event = {
       toolName: "bash",
@@ -165,7 +165,7 @@ describe("tool_call hook", () => {
       ui: { showMutationNotifications: false },
     });
 
-    registerToolCallHandler(pi, config);
+    registerToolCallHandler(pi, () => config);
 
     const event = {
       toolName: "bash",
@@ -194,7 +194,7 @@ describe("tool_call hook", () => {
       ui: { showMutationNotifications: false },
     });
 
-    registerToolCallHandler(pi, config);
+    registerToolCallHandler(pi, () => config);
 
     const event = {
       toolName: "bash",
@@ -236,7 +236,7 @@ describe("tool_call hook", () => {
       ui: { showMutationNotifications: false },
     });
 
-    registerToolCallHandler(pi, config);
+    registerToolCallHandler(pi, () => config);
 
     const event = {
       toolName: "bash",
@@ -251,8 +251,6 @@ describe("tool_call hook", () => {
     );
 
     expect(event.input.command).toBe("npm install");
-    // Note: in production, the handler wouldn't be registered for this config
-    // since hasToolCallFeatures returns false. This tests the internal guard.
   });
 
   it("blocks commands instead of mutating when mode is block", async () => {
@@ -262,7 +260,7 @@ describe("tool_call hook", () => {
       nodePackageManager: { selected: "pnpm" },
     });
 
-    registerToolCallHandler(pi, config);
+    registerToolCallHandler(pi, () => config);
 
     const event = {
       toolName: "bash",
@@ -287,7 +285,7 @@ describe("tool_call hook", () => {
       ui: { showMutationNotifications: true },
     });
 
-    registerToolCallHandler(pi, config);
+    registerToolCallHandler(pi, () => config);
 
     const event = {
       toolName: "bash",
@@ -321,7 +319,7 @@ describe("tool_call hook", () => {
       nodePackageManager: { selected: "pnpm" },
     });
 
-    registerToolCallHandler(pi, config);
+    registerToolCallHandler(pi, () => config);
 
     const event = {
       toolName: "read",
@@ -352,7 +350,7 @@ describe("tool_call hook", () => {
       ui: { showMutationNotifications: true },
     });
 
-    registerToolCallHandler(pi, config);
+    registerToolCallHandler(pi, () => config);
 
     const event = {
       toolName: "bash",
