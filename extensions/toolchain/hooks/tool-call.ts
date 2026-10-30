@@ -150,10 +150,13 @@ function getToolCallCwd(
 
 export function registerToolCallHandler(
   pi: ExtensionAPI,
-  config: ResolvedToolchainConfig,
+  getConfig: () => ResolvedToolchainConfig,
 ): void {
   pi.on("tool_call", async (event, ctx) => {
     if (event.toolName !== "bash") return;
+
+    const config = getConfig();
+    if (!config.enabled || !hasToolCallFeatures(config)) return;
 
     const input = event.input as Record<string, unknown>;
     const command = String(input.command ?? "");
