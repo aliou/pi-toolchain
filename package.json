@@ -1,7 +1,7 @@
 {
   "name": "@aliou/pi-toolchain",
   "version": "0.10.2",
-  "packageManager": "pnpm@10.26.1",
+  "packageManager": "pnpm@11.27.0",
   "engines": {
     "node": ">=22"
   },
@@ -54,12 +54,6 @@
     "ts-json-schema-generator": "^2.9.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.8"
-  },
-  "pnpm": {
-    "overrides": {
-      "@earendil-works/pi-ai": "$@earendil-works/pi-coding-agent",
-      "@earendil-works/pi-tui": "$@earendil-works/pi-coding-agent"
-    }
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
