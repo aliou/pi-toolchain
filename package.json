@@ -1,6 +1,6 @@
 {
   "name": "@aliou/pi-toolchain",
-  "version": "0.10.2",
+  "version": "0.10.3",
   "packageManager": "pnpm@11.27.0",
   "engines": {
     "node": ">=22"
