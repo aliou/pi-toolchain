@@ -1,5 +1,11 @@
 # @aliou/pi-toolchain
 
+## 0.10.4
+
+### Patch Changes
+
+- 5546253: Ship `CHANGELOG.md` in the npm tarball so pi can show the changelog when the extension updates.
+
 ## 0.10.3
 
 ### Patch Changes
