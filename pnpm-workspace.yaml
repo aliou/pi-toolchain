@@ -10,3 +10,4 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - '@aliou/pi-utils-settings@0.24.0'
   - '@aliou/biome-plugins@0.17.0'
+  - '@aliou/sh@0.4.0'
