@@ -36,7 +36,15 @@ function partToString(part: WordPart): string {
     case "BraceExp":
       return `{${part.elems.map(wordToString).join(",")}}`;
     case "ExtGlob":
-      return `${part.op}${part.pattern})`;
+      return `${part.op}${part.word ? wordToString(part.word) : part.pattern})`;
+    case "AnsiC":
+      return part.value;
+    case "LocaleStr":
+      return part.parts.map(partToString).join("");
+    default: {
+      const exhaustiveCheck: never = part;
+      throw new Error(`Unknown word part: ${JSON.stringify(exhaustiveCheck)}`);
+    }
   }
 }
 
