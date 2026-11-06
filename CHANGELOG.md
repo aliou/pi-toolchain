@@ -1,5 +1,11 @@
 # @aliou/pi-toolchain
 
+## 0.10.5
+
+### Patch Changes
+
+- 3aa91d6: Fix `wordToString` dropping `$'...'` (ANSI-C) and `$"..."` (locale) quoted arguments after the `@aliou/sh` 0.4.0 upgrade, and render extglob patterns through their structural word when present
+
 ## 0.10.4
 
 ### Patch Changes
