@@ -4,6 +4,12 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@earendil-works/pi-coding-agent':
+      specifier: 1.4.0
+      version: 1.4.0
+
 overrides:
   '@earendil-works/pi-ai': 1.4.0
   '@earendil-works/pi-tui': 1.4.0
@@ -29,7 +35,7 @@ importers:
         specifier: ^2.31.0
         version: 2.31.0(@types/node@25.9.3)
       '@earendil-works/pi-coding-agent':
-        specifier: 1.4.0
+        specifier: 'catalog:'
         version: 1.4.0(@aws-sdk/credential-provider-node@3.972.90)(@smithy/signature-v4@5.7.5)(zod@3.25.76)
       '@earendil-works/pi-tui':
         specifier: 1.4.0
@@ -862,10 +868,6 @@ packages:
   brace-expansion@5.0.12:
     resolution: {integrity: sha512-YovQ3rzhaLMIrDjNDMkNS01tea93qhEhG5xy8f6+R0l+dw3Ki+5sCoIoI942iuLZTHWogWktgwVDhU09iNEimQ==}
     engines: {node: 20 || >=22}
-
-  brace-expansion@5.0.6:
-    resolution: {integrity: sha512-kLpxurY4Z4r9sgMsyG0Z9uzsBlgiU/EFKhj/h91/8yHu0edo7XuixOIH3VcJ8kkxs6/jPzoI6U9Vj3WqbMQ94g==}
-    engines: {node: 18 || 20 || >=22}
 
   braces@3.0.3:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
@@ -1723,7 +1725,7 @@ snapshots:
       '@aws-sdk/types': 3.975.0
       '@smithy/core': 3.38.0
       '@smithy/fetch-http-handler': 5.8.0
-      '@smithy/node-http-handler': 4.12.1
+      '@smithy/node-http-handler': 4.14.0
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
@@ -2568,10 +2570,6 @@ snapshots:
     dependencies:
       balanced-match: 4.0.3
 
-  brace-expansion@5.0.6:
-    dependencies:
-      balanced-match: 4.0.3
-
   braces@3.0.3:
     dependencies:
       fill-range: 7.1.1
@@ -2935,7 +2933,7 @@ snapshots:
 
   minimatch@10.2.5:
     dependencies:
-      brace-expansion: 5.0.6
+      brace-expansion: 5.0.12
 
   minimatch@10.2.6:
     dependencies:
