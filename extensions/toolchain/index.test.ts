@@ -147,7 +147,8 @@ describe("project configuration", () => {
     writeFileSync(localPath, source);
     const app = await setup(false);
     await app.start();
-    expect(await app.call()).toEqual({
+    const started = await app.call();
+    expect(started).toEqual({
       command: "npm install",
       result: undefined,
     });
@@ -176,13 +177,14 @@ describe("project configuration", () => {
       JSON.stringify({ features: { nodePackageManager: "mutate" } }),
     );
     const app = await setup(true);
-    expect((await app.call()).command).toBe("npm install");
+    const initial = await app.call();
+    expect(initial.command).toBe("npm install");
     await app.start();
-    expect((await app.call()).command).toBe("pnpm install");
+    const afterStart = await app.call();
+    expect(afterStart.command).toBe("pnpm install");
     expect(app.configLoader.getProjectState()).toBe("trusted");
-    expect((await app.settings()).render(100).join("\n")).toContain(
-      "Node package manager",
-    );
+    const panel = await app.settings();
+    expect(panel.render(100).join("\n")).toContain("Node package manager");
   });
 
   it("does not let an untrusted project disable global features", async () => {
@@ -191,7 +193,8 @@ describe("project configuration", () => {
     writeFileSync(localPath, source);
     const app = await setup(false);
     await app.start();
-    expect((await app.call()).result).toEqual({
+    const blocked = await app.call();
+    expect(blocked.result).toEqual({
       block: true,
       reason: expect.any(String),
     });
@@ -209,7 +212,8 @@ describe("project configuration", () => {
     );
     const app = await setup(true);
     await app.start();
-    expect((await app.call()).command).toBe("pnpm install");
+    const mutated = await app.call();
+    expect(mutated.command).toBe("pnpm install");
     expect(app.notify).toHaveBeenCalled();
   });
 
@@ -221,21 +225,20 @@ describe("project configuration", () => {
     );
     const app = await setup(false);
     await app.start();
-    expect((await app.call("git rebase -i HEAD~1")).command).toBe(
-      "git rebase -i HEAD~1",
-    );
+    const passthrough = await app.call("git rebase -i HEAD~1");
+    expect(passthrough.command).toBe("git rebase -i HEAD~1");
     expect(app.notify).toHaveBeenCalledWith(
       expect.stringContaining("project not trusted"),
       "warning",
     );
-    expect((await app.settings()).render(100).join("\n")).toContain(
-      "Project not trusted",
-    );
+    const panel = await app.settings();
+    expect(panel.render(100).join("\n")).toContain("Project not trusted");
     await app.configLoader.save("memory", {
       enabled: true,
       features: { nodePackageManager: "mutate" },
     });
-    expect((await app.call()).command).toBe("pnpm install");
+    const reEnabled = await app.call();
+    expect(reEnabled.command).toBe("pnpm install");
   });
 
   it("applies saved settings from the settings panel to the next call", async () => {
@@ -248,27 +251,30 @@ describe("project configuration", () => {
     await vi.waitFor(() =>
       expect(app.notify).toHaveBeenCalledWith("toolchain: saved", "info"),
     );
-    expect((await app.call()).command).toBe("pnpm install");
+    const saved = await app.call();
+    expect(saved.command).toBe("pnpm install");
   });
 
   it("uses settings changes on the next call", async () => {
     const app = await setup(true);
     await app.start();
-    expect((await app.call()).command).toBe("npm install");
+    const initial = await app.call();
+    expect(initial.command).toBe("npm install");
     await app.configLoader.save("memory", {
       features: { nodePackageManager: "mutate" },
     });
-    expect((await app.call()).command).toBe("pnpm install");
+    const mutated = await app.call();
+    expect(mutated.command).toBe("pnpm install");
     await app.configLoader.save("memory", {
       features: { nodePackageManager: "block" },
     });
-    expect((await app.call()).result).toEqual({
+    const blocked = await app.call();
+    expect(blocked.result).toEqual({
       block: true,
       reason: expect.any(String),
     });
     await app.configLoader.save("memory", { enabled: false });
-    expect((await app.call("git rebase -i HEAD~1")).command).toBe(
-      "git rebase -i HEAD~1",
-    );
+    const passthrough = await app.call("git rebase -i HEAD~1");
+    expect(passthrough.command).toBe("git rebase -i HEAD~1");
   });
 });

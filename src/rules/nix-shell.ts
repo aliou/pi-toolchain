@@ -29,6 +29,14 @@ import type { Rewriter } from "./types";
 const NIX_COMMANDS = new Set(["nix-shell", "nix"]);
 const DEVSHELL_PATTERN = /\bdevShells?\b/;
 
+function hasDevshell(flakePath: string): boolean {
+  try {
+    return DEVSHELL_PATTERN.test(readFileSync(flakePath, "utf-8"));
+  } catch {
+    return false; // unreadable flake.nix — treat as no devshell
+  }
+}
+
 /** Check whether the first command word is a nix command. */
 function isNixCommandName(name: string): boolean {
   return NIX_COMMANDS.has(name);
@@ -38,13 +46,8 @@ function isNixCommandName(name: string): boolean {
 export function detectNixShell(cwd: string): "shell" | "flake" | null {
   const flakePath = join(cwd, "flake.nix");
   if (existsSync(flakePath)) {
-    try {
-      const content = readFileSync(flakePath, "utf-8");
-      if (DEVSHELL_PATTERN.test(content)) {
-        return "flake";
-      }
-    } catch {
-      // unreadable flake.nix — treat as no devshell
+    if (hasDevshell(flakePath)) {
+      return "flake";
     }
   }
 

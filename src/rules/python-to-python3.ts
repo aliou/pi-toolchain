@@ -33,6 +33,7 @@ export function detectBarePythonCommand(command: string): string | null {
     });
   } catch {
     // No regex fallback. False-positive blocking/rewrite is worse than a miss.
+    return null;
   }
 
   return detected;
